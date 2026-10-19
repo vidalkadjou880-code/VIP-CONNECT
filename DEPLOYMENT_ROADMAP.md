@@ -144,3 +144,12 @@
 - [x] **Injection des Variables d'Environnement** : Configuration des variables Cloud Supabase et du service d'expédition d'emails.
 - [x] **Mise en Ligne Réseau Mondial (CDN & SSL)** : Application accessible en HTTPS avec certificat SSL automatique, mise en cache PWA et accès direct Supabase Cloud.
 
+### Étape 11 : Ajustements du Circuit KYC & Expérience Modale Mobile
+- [x] **Suppression des Références Techniques** : Nettoyage intégral de toute mention de "Supabase" ou "Supabase Cloud" de l'interface client (modales, boutons de chargement, notifications toasts).
+- [x] **Validation KYC Administrateur Manuelle** : Suppression définitive de l'auto-approbation. Tout dossier soumis reste au statut `pending` (En cours d'examen) jusqu'à ce que le Super Administrateur valide ou rejette manuellement dans la Console Admin.
+- [x] **Refonte du Pop-up de Soumission & Ergonomie Mobile** :
+  - Titre corrigé en blanc pur contrasté (`#ffffff` au lieu de texte noir invisible sur fond sombre).
+  - Suppression du faux bouton "Annuler" qui s'affichait par anomalie CSS mobile (`:not(.hidden)`).
+  - Message clair informant le voyageur que ses documents sont soumis et en attente de vérification par l'équipe administrative.
+  - Bouton unique "D'accord" occupant 100% de la largeur pour un clic tactile aisé sur smartphone.
+
