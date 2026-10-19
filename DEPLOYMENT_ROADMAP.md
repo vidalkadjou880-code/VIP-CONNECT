@@ -134,3 +134,8 @@
   - Titre principal Hero désormais en blanc pur `#ffffff` avec ombre portée pour une lisibilité parfaite sur le collage de fond.
   - Tailles de champs standardisées à 16px pour éliminer le zoom automatique intempestif sur iPhone (Safari iOS).
 
+### Étape 9 : Dépôt GitHub Officiel & Versioning
+- [x] **Installation & Configuration Git** : Git configuré avec auteur `Vidal Kadjou` (`vidalkadjou880@gmail.com`).
+- [x] **Sécurisation des Secrets** : `.gitignore` configuré pour exclure strictement `.env`, `.env.local`, `logs/` et fichiers de travail temporaires.
+- [x] **Publication Dépôt GitHub** : Dépôt officiel synchronisé avec succès sur [https://github.com/vidalkadjou880-code/VIP-CONNECT](https://github.com/vidalkadjou880-code/VIP-CONNECT) (Branche `main`).
+
