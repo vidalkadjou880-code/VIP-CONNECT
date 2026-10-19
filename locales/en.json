@@ -102,7 +102,7 @@
     "data_sec_desc": "Your identity documents and selfies are encrypted and securely stored. They are only accessible to the VIP Connect compliance department for validation. Your documents will be automatically purged 30 days after your account becomes inactive, in accordance with personal data protection regulations.",
     "submit_btn": "Submit for verification",
     "status_none": "<strong>Status: Identity not verified.</strong><br>Please fill in the information and upload your identity documents to unlock booking services.",
-    "status_pending_redirect": "<strong>Status: Identity verified automatically!</strong><br>Redirecting to booking area...",
+    "status_pending_redirect": "<strong>Status: Verification in progress.</strong><br>Your identity documents have been submitted and are currently being reviewed by our administrative team. Shuttle booking will be enabled upon account approval.",
     "status_rejected": "<strong>Status: Application rejected.</strong><br>Reason: {motif}<br>Please submit clear and correct documents again.",
     "status_approved": "<strong>Status: Identity verified!</strong><br>Congratulations, your identity has been approved by VIP Connect. You can now book your tickets.",
     "validated_badge": "Identity Verified ✓"

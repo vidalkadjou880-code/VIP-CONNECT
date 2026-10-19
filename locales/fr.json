@@ -102,7 +102,7 @@
     "data_sec_desc": "Vos pièces d'identité et selfies sont stockés de manière chiffrée et hautement sécurisée. Ils ne sont accessibles qu'au service de conformité VIP Connect pour validation. Vos documents seront automatiquement purgés 30 jours après la fin d'activité de votre compte, conformément à la réglementation sur la protection des données personnelles.",
     "submit_btn": "Soumettre pour vérification",
     "status_none": "<strong>Statut : Identité non vérifiée.</strong><br>Veuillez remplir les informations et téléverser vos documents d'identité pour débloquer le service de réservation.",
-    "status_pending_redirect": "<strong>Statut : Identité validée automatiquement !</strong><br>Redirection en cours vers l'espace de réservation...",
+    "status_pending_redirect": "<strong>Statut : Dossier en cours de vérification.</strong><br>Vos documents d'identité ont bien été enregistrés et sont actuellement examinés par notre équipe administrative. La réservation de navettes sera débloquée dès l'approbation de votre compte.",
     "status_rejected": "<strong>Statut : Dossier rejeté.</strong><br>Motif : {motif}<br>Veuillez soumettre à nouveau des documents clairs et corrects.",
     "status_approved": "<strong>Statut : Identité validée !</strong><br>Félicitations, votre identité a été approuvée par VIP Connect. Vous pouvez désormais réserver vos billets.",
     "validated_badge": "Identité Validée ✓"

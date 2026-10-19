@@ -631,12 +631,12 @@ const app = {
             }
 
             if (manualTrigger) {
-                this.showToast("Données synchronisées avec Supabase Cloud avec succès !", "success");
+                this.showToast("Données synchronisées avec succès !", "success");
             }
         } catch (err) {
-            console.error("Erreur de synchronisation Supabase:", err);
+            console.error("Erreur de synchronisation:", err);
             if (manualTrigger) {
-                this.showToast("Erreur lors de la synchronisation Supabase.", "error");
+                this.showToast("Erreur lors de la synchronisation des données.", "error");
             }
         }
     },
@@ -1467,30 +1467,23 @@ const app = {
             document.getElementById('btn-submit-kyc').innerText = this.t('kyc.submit_btn');
         } else if (user.kyc.status === 'pending') {
             container.innerHTML = `
-                <div class="alert-box alert-success">
+                <div class="alert-box alert-warning" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; border-radius: 8px; padding: 14px 16px;">
+                    <i class="fas fa-hourglass-half" style="margin-right: 8px;"></i>
                     ${this.t('kyc.status_pending_redirect')}
                 </div>
             `;
-            // Pré-remplir le formulaire
-            document.getElementById('kyc-firstname').value = user.kyc.firstname || user.firstname;
-            document.getElementById('kyc-lastname').value = user.kyc.lastname || user.lastname;
-            document.getElementById('kyc-doc-number').value = user.kyc.docNumber;
-            document.getElementById('kyc-dob').value = user.kyc.dob;
+            // Pré-remplir le formulaire en mode consultation
+            if (document.getElementById('kyc-firstname')) document.getElementById('kyc-firstname').value = user.kyc.firstname || user.firstname;
+            if (document.getElementById('kyc-lastname')) document.getElementById('kyc-lastname').value = user.kyc.lastname || user.lastname;
+            if (document.getElementById('kyc-doc-number')) document.getElementById('kyc-doc-number').value = user.kyc.docNumber || '';
+            if (document.getElementById('kyc-dob')) document.getElementById('kyc-dob').value = user.kyc.dob || '';
             
-            // Désactiver la soumission
-            document.getElementById('btn-submit-kyc').disabled = true;
-            document.getElementById('btn-submit-kyc').innerText = this.t('kyc.validated_badge');
-            
-            // Débloquer l'utilisateur en mémoire
-            const userInDb = this.state.users.find(u => u.phone === user.phone);
-            if (userInDb) {
-                userInDb.kyc.status = 'approved';
-                this.saveUsers();
+            // Désactiver le bouton de soumission
+            const submitBtn = document.getElementById('btn-submit-kyc');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-clock" style="margin-right: 6px;"></i> Dossier en cours d\'examen';
             }
-
-            setTimeout(() => {
-                this.showSection('dashboard');
-            }, 1500);
         } else if (user.kyc.status === 'rejected') {
             container.innerHTML = `
                 <div class="alert-box alert-warning" style="background: rgba(255, 77, 77, 0.15);">
@@ -1739,10 +1732,10 @@ const app = {
         const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Téléversement sur Supabase Storage...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi sécurisé des pièces en cours...';
         }
 
-        // Téléversement réel sur Supabase Storage
+        // Téléversement sécurisé des fichiers de vérification
         let rectoUrl = user.tempDocs && user.tempDocs.recto ? user.tempDocs.recto : (userInDb.kyc.documents ? userInDb.kyc.documents.recto : null);
         let versoUrl = isPassport ? null : (user.tempDocs && user.tempDocs.verso ? user.tempDocs.verso : (userInDb.kyc.documents ? userInDb.kyc.documents.verso : null));
         let selfieUrl = user.tempDocs && user.tempDocs.selfie ? user.tempDocs.selfie : (userInDb.kyc.documents ? userInDb.kyc.documents.selfie : null);
@@ -1762,12 +1755,13 @@ const app = {
                     if (cdnSelfie) selfieUrl = cdnSelfie;
                 }
             } catch (err) {
-                console.warn("Notice upload Supabase Storage:", err);
+                console.warn("Notice upload KYC:", err);
             }
         }
 
+        // Enregistrement avec statut 'pending' (en attente de l'examen de l'administrateur)
         userInDb.kyc = {
-            status: 'approved',
+            status: 'pending',
             firstname: kycFirstname,
             lastname: kycLastname,
             docNumber: docNumber,
@@ -1778,6 +1772,7 @@ const app = {
                 verso: versoUrl,
                 selfie: selfieUrl
             },
+            submittedAt: new Date().toISOString(),
             comments: ''
         };
 
@@ -1786,14 +1781,21 @@ const app = {
         this.saveUsers();
         
         if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-clock" style="margin-right: 6px;"></i> Dossier en cours d\'examen';
         }
 
-        console.log("Enregistrement réussi. Documents enregistrés sur Supabase Cloud.");
-        this.showModalAlert("Vos documents d'identité ont été téléversés et vérifiés avec succès sur Supabase Cloud !\n\nVotre compte est désormais certifié pour réserver des trajets VIP.", "Dossier KYC Validé", "success");
+        console.log("Enregistrement réussi. Documents enregistrés en attente de validation admin.");
+        this.showModalAlert(
+            "Vos documents d'identité ont été transmis avec succès !\n\nVotre dossier est désormais en cours d'examen par notre équipe administrative.\nVous recevrez une notification dès que votre compte sera validé.",
+            "Documents Soumis avec Succès",
+            "success"
+        );
         this.renderKYCStatusAlert();
         this.updateHeaderMenu();
+        if (typeof this.updateMobileBottomBar === 'function') {
+            this.updateMobileBottomBar();
+        }
         console.log("--- FIN DE LA SOUMISSION KYC ---");
     },
 
@@ -3910,19 +3912,22 @@ const app = {
             }
         }
 
-        // Bouton Annuler
+        // Bouton Annuler (strictement masqué par défaut si non demandé)
         if (btnCancel) {
             if (cancelText) {
                 btnCancel.classList.remove('hidden');
+                btnCancel.style.display = 'inline-flex';
                 btnCancel.innerText = cancelText;
             } else {
                 btnCancel.classList.add('hidden');
+                btnCancel.style.display = 'none';
             }
         }
 
-        // Bouton Confirmer
+        // Bouton Confirmer (largeur 100% si bouton unique)
         if (btnConfirm) {
             btnConfirm.innerText = confirmText;
+            btnConfirm.style.width = cancelText ? 'auto' : '100%';
         }
 
         // Afficher l'overlay
@@ -4146,7 +4151,7 @@ const fallbackTranslations = {
       "data_sec_desc": "Vos pièces d'identité et selfies sont stockés de manière chiffrée et hautement sécurisée. Ils ne sont accessibles qu'au service de conformité VIP Connect pour validation. Vos documents seront automatiquement purgés 30 jours après la fin d'activité de votre compte, conformément à la réglementation sur la protection des données personnelles.",
       "submit_btn": "Soumettre pour vérification",
       "status_none": "<strong>Statut : Identité non vérifiée.</strong><br>Veuillez remplir les informations et téléverser vos documents d'identité pour débloquer le service de réservation.",
-      "status_pending_redirect": "<strong>Statut : Identité validée automatiquement !</strong><br>Redirection en cours vers l'espace de réservation...",
+      "status_pending_redirect": "<strong>Statut : Dossier en cours de vérification.</strong><br>Vos documents d'identité ont bien été enregistrés et sont actuellement examinés par notre équipe administrative. La réservation de navettes sera débloquée dès l'approbation de votre compte.",
       "status_rejected": "<strong>Statut : Dossier rejeté.</strong><br>Motif : {motif}<br>Veuillez soumettre à nouveau des documents clairs et corrects.",
       "status_approved": "<strong>Statut : Identité validée !</strong><br>Félicitations, votre identité a été approuvée par VIP Connect. Vous pouvez désormais réserver vos billets.",
       "validated_badge": "Identité Validée ✓"
@@ -4437,7 +4442,7 @@ const fallbackTranslations = {
       "data_sec_desc": "Your identity documents and selfies are encrypted and securely stored. They are only accessible to the VIP Connect compliance department for validation. Your documents will be automatically purged 30 days after your account becomes inactive, in accordance with personal data protection regulations.",
       "submit_btn": "Submit for verification",
       "status_none": "<strong>Status: Identity not verified.</strong><br>Please fill in the information and upload your identity documents to unlock booking services.",
-      "status_pending_redirect": "<strong>Status: Identity verified automatically!</strong><br>Redirecting to booking area...",
+      "status_pending_redirect": "<strong>Status: Verification in progress.</strong><br>Your identity documents have been submitted and are currently being reviewed by our administrative team. Shuttle booking will be enabled upon account approval.",
       "status_rejected": "<strong>Status: Application rejected.</strong><br>Reason: {motif}<br>Please submit clear and correct documents again.",
       "status_approved": "<strong>Status: Identity verified!</strong><br>Congratulations, your identity has been approved by VIP. You can now book your tickets.",
       "validated_badge": "Identity Verified ✓"
