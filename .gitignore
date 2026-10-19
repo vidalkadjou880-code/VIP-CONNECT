@@ -1,0 +1,15 @@
+# Environment
+.env
+.env.local
+
+# Supabase CLI temp files
+supabase/.temp/
+.supabase/
+
+# Node
+node_modules/
+
+# Logs & Scratch
+logs/
+scratch_*.txt
+*.log

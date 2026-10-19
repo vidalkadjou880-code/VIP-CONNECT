@@ -1,0 +1,39 @@
+{
+  "name": "VIP Connect - Transport Inter-urbain Douala ↔ Yaoundé",
+  "short_name": "VIP Connect",
+  "description": "Réservation premium et transport d'élite Douala ↔ Yaoundé en berlines de luxe.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0c0d12",
+  "theme_color": "#c5a880",
+  "orientation": "portrait",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "images/vip_connect_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/vip_connect_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "transportation", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Réserver un Trajet",
+      "url": "/#sec-dashboard",
+      "description": "Planifier une navette Douala - Yaoundé"
+    },
+    {
+      "name": "Mes Billets & Réservations",
+      "url": "/#sec-dashboard",
+      "description": "Consulter mes billets PDF"
+    }
+  ]
+}

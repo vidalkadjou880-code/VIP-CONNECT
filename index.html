@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Connect - Transport Inter-urbain Douala ↔ Yaoundé</title>
+    <meta name="description"
+        content="Réservez votre trajet premium entre Douala et Yaoundé à bord de véhicules personnels haut de gamme climatisés.">
+    <link rel="stylesheet" href="style.css?v=20261017">
+    <!-- Icones FontAwesome pour un rendu élégant -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Configuration PWA & Notifications Smartphone -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c5a880">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VIP Connect">
+    <link rel="apple-touch-icon" href="images/vip_connect_logo.png">
+</head>
+
+<body>
+
+    <!-- Entête de l'application -->
+    <header>
+        <div class="container header-container">
+            <a href="#" class="logo" id="logoLink" onclick="app.routeUserDashboard(); return false;">
+                <img src="images/vip_connect_logo.png" alt="VIP Connect Logo" style="height: 60px;">
+            </a>
+
+            <div class="header-right">
+                <!-- Bouton Notifications Smartphone -->
+                <button class="header-notif-btn" id="btn-header-notif" onclick="app.togglePhoneNotifications()" title="Notifications sur téléphone">
+                    <i class="fas fa-bell"></i>
+                    <span id="header-notif-dot" class="notif-dot hidden"></span>
+                </button>
+
+                <!-- Sélecteur de langue -->
+                <div class="lang-selector">
+                    <button class="lang-btn active" id="lang-fr" onclick="app.changeLanguage('fr')">FR</button>
+                    <span class="lang-separator">/</span>
+                    <button class="lang-btn" id="lang-en" onclick="app.changeLanguage('en')">EN</button>
+                </div>
+
+                <!-- Menu hamburger mobile -->
+                <button class="mobile-menu-toggle" onclick="app.toggleMobileMenu()" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <nav class="nav-links" id="navLinks">
+                    <!-- Visiteur non connecté -->
+                    <button class="nav-btn active" id="btnNavHome" onclick="app.showSection('home-login')"
+                        data-i18n="nav.home">Accueil</button>
+                    <button class="nav-btn nav-btn-outline-gold" id="btnNavRegister"
+                        onclick="app.showSection('register')" data-i18n="nav.register">S'inscrire</button>
+                    <button class="nav-btn nav-btn-highlight-small" id="btnNavLogin" onclick="app.showSection('login')"
+                        data-i18n="nav.login">Se connecter</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Zone principale -->
+    <main>
+
+        <!-- ÉTAPE 1 : PAGE D'ACCUEIL PUBLIQUE (Visiteur) -->
+        <section id="sec-home-login" class="section-container">
+            <div class="hero">
+                <div class="container">
+                    <h1 style="color: #FFFFFF; text-shadow: 0 3px 15px rgba(0,0,0,0.85);" data-i18n="home.hero_title">Le Voyage Inter-urbain Réinventé
+                    </h1>
+                    <p data-i18n="home.hero_subtitle">Déplacez-vous entre Douala et Yaoundé dans le confort absolu de
+                        véhicules haut de gamme limités à 3 passagers. Chauffeur professionnel et climatisation
+                        garantie.</p>
+                </div>
+            </div>
+
+            <!-- Section Présentation de l'Agence -->
+            <div class="landing-intro-section">
+                <div class="container">
+                    <div class="landing-grid-2">
+                        <div class="landing-intro-text">
+                            <span class="subtitle" data-i18n="home.intro_subtitle">L'expérience premium par
+                                excellence</span>
+                            <h2 data-i18n="home.intro_title">Qui sommes-nous ?</h2>
+                            <p data-i18n="home.intro_p1">VIP Connect est une agence de transport d'élite assurant la
+                                liaison Douala – Yaoundé. Nous proposons un concept unique au Cameroun : des trajets
+                                directs, sans arrêts intermédiaires, à bord de véhicules personnels haut de gamme
+                                parfaitement climatisés.</p>
+                            <p data-i18n="home.intro_p2">Chaque navette est strictement limitée à 3 passagers pour
+                                garantir à chacun un espace généreux et un confort optimal. Fini le stress des gares de
+                                transport bondées, voyagez en toute sérénité.</p>
+                        </div>
+                        <div class="landing-intro-image">
+                            <img src="images/corolla_white.png" alt="Toyota Corolla VIP Connect">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Liaison / Villes Desservies -->
+            <div class="landing-destinations-section">
+                <div class="container">
+                    <h2 class="section-title" data-i18n="home.destinations_title">Liaison Quotidienne Douala ↔ Yaoundé
+                    </h2>
+                    <p class="section-subtitle" data-i18n="home.destinations_subtitle">Découvrez nos deux hubs
+                        principaux à travers leurs monuments emblématiques</p>
+
+                    <div class="destinations-grid">
+                        <div class="destination-card">
+                            <div class="destination-image">
+                                <img src="images/monument_yaounde.jpg" alt="Yaoundé - Monument de la Réunification">
+                            </div>
+                            <div class="destination-info">
+                                <h3>Yaoundé</h3>
+                                <p class="destination-tag" data-i18n="home.dest_yaounde_tag">La Capitale Politique</p>
+                                <p data-i18n="home.dest_yaounde_desc">Retrouvez notre agence VIP Connect au centre-ville
+                                    pour un départ serein vers le cœur politique du pays.</p>
+                            </div>
+                        </div>
+                        <div class="destination-card">
+                            <div class="destination-image">
+                                <img src="images/monument_douala.jpg" alt="Douala - La Nouvelle Liberté">
+                            </div>
+                            <div class="destination-info">
+                                <h3>Douala</h3>
+                                <p class="destination-tag" data-i18n="home.dest_douala_tag">La Capitale Économique</p>
+                                <p data-i18n="home.dest_douala_desc">Voyagez vers ou depuis la métropole économique
+                                    active et le principal centre d'affaires du Cameroun.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Avantages -->
+            <div class="landing-benefits-section">
+                <div class="container">
+                    <h2 class="section-title" data-i18n="home.benefits_title">Les avantages de notre service</h2>
+                    <p class="section-subtitle" data-i18n="home.benefits_subtitle">Pourquoi choisir l'expérience VIP
+                        Connect ?</p>
+
+                    <div class="benefits-grid">
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-couch"></i></div>
+                            <h3 data-i18n="home.benefit_comfort_title">Confort Premium</h3>
+                            <p data-i18n="home.benefit_comfort_desc">Sièges en cuir spacieux, climatisation individuelle
+                                réglable et boissons rafraîchissantes offertes.</p>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-clock"></i></div>
+                            <h3 data-i18n="home.benefit_punctuality_title">Ponctualité Rigoureuse</h3>
+                            <p data-i18n="home.benefit_punctuality_desc">Départs à l'heure précise. Nous valorisons
+                                votre temps, nos navettes ne prennent aucun retard.</p>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-shield-halved"></i></div>
+                            <h3 data-i18n="home.benefit_safety_title">Sécurité Absolue</h3>
+                            <p data-i18n="home.benefit_safety_desc">Chauffeurs professionnels chevronnés, véhicules
+                                géo-localisés et vérification systématique de l'identité des passagers.</p>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-tablet-screen-button"></i></div>
+                            <h3 data-i18n="home.benefit_booking_title">Réservation Intelligente</h3>
+                            <p data-i18n="home.benefit_booking_desc">Sélectionnez votre créneau et choisissez votre
+                                place exacte à bord en temps réel.</p>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-mobile-screen-button"></i></div>
+                            <h3 data-i18n="home.benefit_momo_title">Paiement Mobile</h3>
+                            <p data-i18n="home.benefit_momo_desc">Réglez vos réservations instantanément et en toute
+                                sécurité via Orange Money ou MTN MoMo.</p>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon"><i class="fas fa-car-rear"></i></div>
+                            <h3 data-i18n="home.benefit_vehicles_title">Véhicules Haut de Gamme</h3>
+                            <p data-i18n="home.benefit_vehicles_desc">Voyagez à bord de berlines modernes et de SUV
+                                luxueux régulièrement inspectés.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Tarif -->
+            <div class="landing-price-section">
+                <div class="container">
+                    <h2 class="section-title" data-i18n="home.price_title">Un Tarif Unique et Transparent</h2>
+                    <p class="section-subtitle" data-i18n="home.price_subtitle">Une expérience classe affaires
+                        accessible</p>
+
+                    <div class="landing-price-card">
+                        <div class="price-amount" data-i18n="home.price_amount">20 000 FCFA</div>
+                        <span class="price-label" data-i18n="home.price_label">Aller simple</span>
+                        <div style="margin-top: 10px; font-size: 1.4rem; color: var(--text-white); font-weight: bold;">
+                            <span data-i18n="home.price_roundtrip_amount">35 000 FCFA</span>
+                            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal; margin-left: 5px;" data-i18n="home.price_roundtrip_label">Aller-retour</span>
+                        </div>
+                        <ul class="price-details-list">
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="home.price_detail_1">Véhicule
+                                    climatisé haut de gamme</span></li>
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="home.price_detail_2">3 passagers
+                                    maximum par trajet</span></li>
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="home.price_detail_3">Boisson
+                                    offerte à bord</span></li>
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="home.price_detail_4">Bagages
+                                    sécurisés en coffre</span></li>
+                        </ul>
+                        <button class="btn-gold" onclick="app.handleHomeCta()" data-i18n="home.price_btn">Réserver mon
+                            voyage</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Témoignages Voyageurs -->
+            <div class="testimonials">
+                <div class="container">
+                    <h2 class="section-title">Ce qu'en disent nos membres</h2>
+                    <p class="section-subtitle">La satisfaction de nos voyageurs est notre plus grande réussite</p>
+
+                    <div class="testimonials-grid">
+                        <!-- Témoignage 1 -->
+                        <div class="testimonial-card">
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <p class="testimonial-text">"Un service impeccable. J'ai voyagé de Douala à Yaoundé dans un
+                                calme absolu, le véhicule est spacieux et le chauffeur extrêmement courtois. Fini les
+                                gares bondées !"</p>
+                            <div class="testimonial-author">
+                                <div class="author-img">MN</div>
+                                <div class="author-info">
+                                    <h4>Marc Ngassa</h4>
+                                    <p>Entrepreneur, Douala</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Témoignage 2 -->
+                        <div class="testimonial-card">
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <p class="testimonial-text">"La climatisation fonctionne parfaitement, nous étions seulement
+                                3 passagers. C'est l'équivalent d'un voyage en classe affaires mais sur route
+                                Camerounaise."</p>
+                            <div class="testimonial-author">
+                                <div class="author-img">SE</div>
+                                <div class="author-info">
+                                    <h4>Sandra Eboua</h4>
+                                    <p>Consultante Finance, Yaoundé</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Témoignage 3 -->
+                        <div class="testimonial-card">
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <p class="testimonial-text">"La vérification d'identité avant réservation est rassurante, on
+                                sait avec qui on voyage. Le paiement Mobile Money est ultra-fluide et instantané."</p>
+                            <div class="testimonial-author">
+                                <div class="author-img">PK</div>
+                                <div class="author-info">
+                                    <h4>Paul Kotto</h4>
+                                    <p>Directeur de Projet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE 1.5 : CONNEXION DÉDIÉE (Visiteur) -->
+        <section id="sec-login" class="section-container hidden">
+            <div class="container">
+                <div class="card-premium" style="max-width: 500px;">
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; text-align: center; margin-bottom: 20px; color: var(--text-white);"
+                        data-i18n="login.title">
+                        Accéder à l'expérience VIP Connect</h3>
+
+                    <form id="form-login" onsubmit="app.handleLogin(event)" novalidate>
+                        <div class="form-group">
+                            <label for="login-identifier" data-i18n="login.identifier_label">Téléphone ou Email</label>
+                            <input type="text" id="login-identifier" class="form-control"
+                                placeholder="+237 6xx xx xx xx ou nom@exemple.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="login-password" data-i18n="login.password_label">Mot de passe</label>
+                            <input type="password" id="login-password" class="form-control" placeholder="••••••••"
+                                required>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 8px;">
+                                <label
+                                    style="font-size: 13px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;">
+                                    <input type="checkbox" onchange="app.togglePasswordVisibility('login-password')"
+                                        style="accent-color: var(--text-white);">
+                                    <span data-i18n="login.show_password">Afficher le mot de passe</span>
+                                </label>
+                                <a href="#" onclick="app.showSection('forgot-password')"
+                                    style="color: var(--text-white); font-size: 13px; text-decoration: none; font-weight: 500;"
+                                    data-i18n="login.forgot_password">Mot de passe oublié ?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-gold" data-i18n="login.submit_btn">Se connecter</button>
+
+                        <div style="margin-top: 20px; text-align: center; font-size: 14px;">
+                            <span style="color: var(--text-muted);" data-i18n="login.new_user_text">Nouveau chez VIP
+                                Connect ?</span>
+                            <a href="#" onclick="app.showSection('register')"
+                                style="color: var(--text-white); text-decoration: none; font-weight: 600; margin-left: 5px;"
+                                data-i18n="login.create_account_link">Créer un compte</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE 2 : CRÉATION DE COMPTE (Visiteur) -->
+        <section id="sec-register" class="section-container hidden">
+            <div class="container">
+                <div class="card-premium" style="max-width: 550px;">
+                    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
+                        data-i18n="register.title">
+                        Devenir Membre VIP Connect</h2>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px;"
+                        data-i18n="register.subtitle">
+                        Inscrivez-vous pour planifier votre prochain voyage d'affaires.</p>
+
+                    <form id="form-register" onsubmit="app.handleRegister(event)" novalidate>
+                        <div class="form-control-row">
+                            <div class="form-group">
+                                <label for="reg-firstname" data-i18n="register.firstname">Prénom</label>
+                                <input type="text" id="reg-firstname" class="form-control" required
+                                    placeholder="Ex. Jean" data-i18n-placeholder="register.firstname_placeholder">
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-lastname" data-i18n="register.lastname">Nom</label>
+                                <input type="text" id="reg-lastname" class="form-control" required
+                                    placeholder="Ex. Dupuis" data-i18n-placeholder="register.lastname_placeholder">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-email" data-i18n="register.email">Adresse Email</label>
+                            <input type="email" id="reg-email" class="form-control" required
+                                placeholder="nom@exemple.com" data-i18n-placeholder="register.email_placeholder">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-phone" data-i18n="register.phone">Numéro de Téléphone</label>
+                            <input type="tel" id="reg-phone" class="form-control" required
+                                placeholder="+237 6xx xx xx xx" data-i18n-placeholder="register.phone_placeholder">
+                        </div>
+
+                        <div class="form-control-row">
+                            <div class="form-group">
+                                <label for="reg-password" data-i18n="register.password">Mot de passe</label>
+                                <input type="password" id="reg-password" class="form-control" required
+                                    placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-password-confirm"
+                                    data-i18n="register.password_confirm">Confirmation</label>
+                                <input type="password" id="reg-password-confirm" class="form-control" required
+                                    placeholder="••••••••">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: -5px; margin-bottom: 15px;">
+                            <label
+                                style="font-size: 13px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;">
+                                <input type="checkbox" onchange="app.toggleRegisterPasswordsVisibility()"
+                                    style="accent-color: var(--text-white);">
+                                <span data-i18n="register.show_password">Afficher les mots de passe</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn-gold" style="margin-top: 10px;"
+                            data-i18n="register.submit_btn">Créer mon compte</button>
+
+                        <div style="margin-top: 20px; text-align: center; font-size: 14px;">
+                            <span style="color: var(--text-muted);" data-i18n="register.already_member">Vous avez déjà
+                                un compte ?</span>
+                            <a href="#" onclick="app.showSection('login')"
+                                style="color: var(--text-white); text-decoration: none; font-weight: 600; margin-left: 5px;"
+                                data-i18n="register.login_link">Se
+                                connecter</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE 2.5 : VÉRIFICATION RÉELLE DE L'EMAIL (Validation par lien reçu) -->
+        <section id="sec-verify-otp" class="section-container hidden">
+            <div class="container">
+                <div class="card-premium" style="max-width: 520px; text-align: center;">
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(197, 168, 128, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(197, 168, 128, 0.3);">
+                        <i class="fas fa-envelope-circle-check" style="font-size: 32px; color: var(--gold-light);"></i>
+                    </div>
+
+                    <h2 style="font-family: 'Playfair Display', serif; font-size: 26px; color: var(--text-white); margin-bottom: 8px;">
+                        Code de Sécurité
+                    </h2>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">
+                        Un code de vérification à 6 chiffres a été envoyé à :<br>
+                        <strong id="otp-target-display" style="color: var(--gold-light); font-size: 16px; display: inline-block; margin-top: 6px;">user@example.com</strong>
+                    </p>
+
+                    <!-- Saisie principale du code à 6 chiffres -->
+                    <div style="margin: 20px auto; padding: 24px 20px; background: rgba(197, 168, 128, 0.06); border: 1px solid rgba(197, 168, 128, 0.25); border-radius: 14px; max-width: 440px;">
+                        <p style="color: var(--text-white); font-size: 14px; margin-bottom: 18px; font-weight: 500;">
+                            Entrez les 6 chiffres reçus par e-mail :
+                        </p>
+                        <form id="form-verify-otp" onsubmit="app.handleVerifyOtpSubmit(event)" novalidate>
+                            <div class="otp-inputs-container" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 22px;">
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="0" autocomplete="one-time-code" autofocus>
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="1">
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="2">
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="3">
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="4">
+                                <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-index="5">
+                            </div>
+                            <button type="submit" id="btn-validate-otp" class="btn-gold" style="width: 100%; max-width: 280px; padding: 12px 24px; font-size: 15px; font-weight: 600;">
+                                <i class="fas fa-shield-alt" style="margin-right: 8px;"></i> Valider mon code
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Compte à rebours et renvoi du mail -->
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 15px;">
+                        <span id="otp-timer-text">Possibilité de renvoyer un email dans <strong id="otp-countdown" style="color: var(--text-white);">60s</strong></span>
+                        <button type="button" id="btn-resend-otp" class="hidden" onclick="app.resendOtpCode()" style="color: var(--gold-light); text-decoration: underline; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            <i class="fas fa-paper-plane" style="margin-right: 5px;"></i> Renvoyer un nouvel email de vérification
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 18px; display: flex; justify-content: center; gap: 20px;">
+                        <a href="#" onclick="app.cancelOtpVerification()" style="color: var(--text-muted); text-decoration: none; font-size: 13px;">
+                            &larr; Modifier l'adresse / Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE : MOT DE PASSE OUBLIÉ -->
+        <section id="sec-forgot-password" class="section-container hidden">
+            <div class="container">
+                <div class="card-premium" style="max-width: 500px;">
+                    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
+                        data-i18n="forgot.title">
+                        Réinitialisation</h2>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px;"
+                        data-i18n="forgot.subtitle">
+                        Entrez votre numéro de téléphone ou email pour recevoir votre code de vérification.</p>
+
+                    <!-- Étape 1 : Demande du code -->
+                    <form id="form-forgot-step1" onsubmit="app.handleForgotRequestOtp(event)" novalidate>
+                        <div class="form-group">
+                            <label for="forgot-identifier" data-i18n="forgot.identifier_label">Téléphone ou Email</label>
+                            <input type="text" id="forgot-identifier" class="form-control" required
+                                placeholder="+237 6xx xx xx xx ou nom@exemple.com"
+                                data-i18n-placeholder="forgot.identifier_placeholder">
+                        </div>
+
+                        <button type="submit" id="btn-forgot-send" class="btn-gold" style="margin-top: 10px;">
+                            <i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Envoyer le code de vérification
+                        </button>
+                    </form>
+
+                    <!-- Étape 2 : Saisie du code et nouveau mot de passe -->
+                    <form id="form-forgot-step2" class="hidden" onsubmit="app.handleForgotResetSubmit(event)" style="margin-top: 15px;" novalidate>
+                        <div class="alert-box alert-success" style="margin-bottom: 20px; font-size: 13px;">
+                            <i class="fas fa-check-circle" style="margin-right: 6px;"></i> Code envoyé avec succès à <strong id="forgot-target-display"></strong>.
+                        </div>
+
+                        <div class="form-group">
+                            <label for="forgot-otp-code">Code de vérification (6 chiffres)</label>
+                            <input type="text" id="forgot-otp-code" class="form-control" maxlength="6" inputmode="numeric" required
+                                placeholder="Ex. 123456" style="letter-spacing: 4px; font-size: 18px; text-align: center; font-weight: bold;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="forgot-new-password">Nouveau mot de passe</label>
+                            <input type="password" id="forgot-new-password" class="form-control" minlength="6" required placeholder="••••••••">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="forgot-confirm-password">Confirmer le nouveau mot de passe</label>
+                            <input type="password" id="forgot-confirm-password" class="form-control" minlength="6" required placeholder="••••••••">
+                        </div>
+
+                        <button type="submit" class="btn-gold" style="margin-top: 10px;">
+                            <i class="fas fa-key" style="margin-right: 8px;"></i> Enregistrer le nouveau mot de passe
+                        </button>
+
+                        <div style="text-align: center; margin-top: 15px;">
+                            <button type="button" onclick="app.handleForgotBackToStep1()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px;">
+                                &larr; Modifier le numéro ou l'email
+                            </button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 25px; text-align: center; font-size: 14px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <a href="#" onclick="app.showSection('login')"
+                            style="color: var(--text-muted); text-decoration: none;"
+                            data-i18n="forgot.back_login">&larr; Retour à la connexion</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE 3 : VÉRIFICATION D'IDENTITÉ (Client connecté, KYC non validé) -->
+        <section id="sec-kyc-verification" class="section-container hidden">
+            <div class="container" style="max-width: 700px;">
+                <div class="card-premium" style="max-width: 100%;">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <i class="fas fa-shield-halved"
+                            style="font-size: 48px; color: var(--text-white); margin-bottom: 15px;"></i>
+                        <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; color: var(--text-white);"
+                            data-i18n="kyc.title">
+                            Vérification d'Identité</h2>
+                        <p style="color: var(--text-muted); font-size: 14px; margin-top: 8px;" data-i18n="kyc.subtitle">
+                            Conformément à la
+                            réglementation sur le transport inter-urbain haut de gamme, vous devez certifier votre
+                            identité avant de pouvoir effectuer une réservation.</p>
+                    </div>
+
+                    <!-- Statut KYC actuel -->
+                    <div id="kyc-status-alert"></div>
+
+                    <form id="form-kyc" onsubmit="app.handleKYCSubmit(event)" novalidate>
+                        <div class="form-control-row">
+                            <div class="form-group">
+                                <label for="kyc-firstname" data-i18n="kyc.firstname">Prénom (Identique à la
+                                    pièce)</label>
+                                <input type="text" id="kyc-firstname" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="kyc-lastname" data-i18n="kyc.lastname">Nom (Identique à la pièce)</label>
+                                <input type="text" id="kyc-lastname" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-i18n="kyc.doc_type_label">Type de document d'identité</label>
+                            <div style="display: flex; gap: 20px; margin-top: 10px; margin-bottom: 20px;">
+                                <label
+                                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 14px; font-weight: 500; color: var(--text-white);">
+                                    <input type="radio" name="kyc-doc-type" value="cni" checked
+                                        onchange="app.handleDocTypeChange()">
+                                    <span data-i18n="kyc.cni_label">Carte Nationale d'Identité (CNI)</span>
+                                </label>
+                                <label
+                                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 14px; font-weight: 500; color: var(--text-white);">
+                                    <input type="radio" name="kyc-doc-type" value="passport"
+                                        onchange="app.handleDocTypeChange()">
+                                    <span data-i18n="kyc.passport_label">Passeport</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-control-row">
+                            <div class="form-group">
+                                <label for="kyc-doc-number" data-i18n="kyc.doc_number">Numéro du document</label>
+                                <input type="text" id="kyc-doc-number" class="form-control"
+                                    placeholder="Entrez le numéro" data-i18n-placeholder="kyc.doc_number_placeholder"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="kyc-dob" data-i18n="kyc.dob">Date de Naissance</label>
+                                <input type="date" id="kyc-dob" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <!-- Zone Capture de documents en direct -->
+                        <div class="upload-container">
+                            <div class="form-group">
+                                <label data-i18n="kyc.upload_recto">1. Photo Recto de la CNI / Passeport</label>
+                                <div class="upload-box" id="drop-recto" onclick="app.openCamera('recto')">
+                                    <div class="upload-icon"><i class="fas fa-camera"></i></div>
+                                    <div class="upload-text" data-i18n="kyc.camera_open_recto"><span>Prendre la photo Recto</span></div>
+                                    <div id="preview-recto-container" class="hidden upload-preview-container"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="verso-upload-group">
+                                <label data-i18n="kyc.upload_verso">2. Photo Verso de la CNI / Passeport</label>
+                                <div class="upload-box" id="drop-verso" onclick="app.openCamera('verso')">
+                                    <div class="upload-icon"><i class="fas fa-camera"></i></div>
+                                    <div class="upload-text" data-i18n="kyc.camera_open_verso"><span>Prendre la photo Verso</span></div>
+                                    <div id="preview-verso-container" class="hidden upload-preview-container"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n="kyc.upload_selfie">3. Photo Selfie</label>
+                                <div class="upload-box" id="drop-selfie" onclick="app.openCamera('selfie')">
+                                    <div class="upload-icon"><i class="fas fa-user-circle"></i></div>
+                                    <div class="upload-text" data-i18n="kyc.camera_open_selfie"><span>Prendre un selfie en direct</span></div>
+                                    <div id="preview-selfie-container" class="hidden upload-preview-container"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Politique de protection des données -->
+                        <div class="alert-box alert-info">
+                            <h4 style="font-weight: 600; color: var(--text-white); margin-bottom: 8px;"><i
+                                    class="fas fa-user-shield" style="margin-right: 8px;"></i><span
+                                    data-i18n="kyc.data_sec_title">Sécurité et protection des
+                                    données</span></h4>
+                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;"
+                                data-i18n="kyc.data_sec_desc">Vos pièces
+                                d'identité et selfies sont stockés de manière chiffrée et hautement sécurisée. Ils ne
+                                sont accessibles qu'au service de conformité VIP Connect pour validation. Vos documents
+                                seront
+                                automatiquement purgés 30 jours après la fin d'activité de votre compte, conformément à
+                                la réglementation sur la protection des données personnelles.</p>
+                        </div>
+
+                        <button type="submit" id="btn-submit-kyc" class="btn-gold" data-i18n="kyc.submit_btn">Soumettre
+                            pour vérification</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉTAPE 4 & 5 : DASHBOARD CLIENT CONNECTÉ & VÉRIFIÉ (Réservation) -->
+        <section id="sec-dashboard" class="section-container hidden">
+            <div class="container">
+                <div id="kyc-banner" class="hidden alert-box alert-warning"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-color: var(--text-white); background: rgba(197, 168, 128, 0.05);">
+                    <div>
+                        <strong style="color: var(--text-white); font-size: 16px;"><i class="fas fa-id-card"
+                                style="color: var(--text-white); margin-right: 8px;"></i> <span
+                                data-i18n="dashboard.kyc_banner_title">Vérification d'identité
+                                requise</span></strong><br>
+                        <span style="color: var(--text-muted); font-size: 13px;"
+                            data-i18n="dashboard.kyc_banner_desc">Vous devez certifier votre identité
+                            pour pouvoir réserver un trajet.</span>
+                    </div>
+                    <button class="btn-gold" style="width: auto; padding: 10px 20px; font-size: 14px; color: #111;"
+                        onclick="app.showSection('kyc-verification')"
+                        data-i18n="dashboard.kyc_banner_btn">S'identifier</button>
+                </div>
+
+                <!-- Bannière Notifications Téléphone (Billet & Rappels de Départ) -->
+                <div id="phone-notif-card" class="phone-notif-banner">
+                    <div class="phone-notif-info">
+                        <div class="phone-notif-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="phone-notif-text">
+                            <h4 id="phone-notif-title">
+                                <span data-i18n="notifications.phone_title">Notifications sur votre Téléphone</span>
+                                <span id="phone-notif-status-pill" class="badge badge-approved hidden" style="font-size: 11px; margin-left: 6px;">Actives ✓</span>
+                            </h4>
+                            <p id="phone-notif-desc" data-i18n="notifications.phone_desc">
+                                Recevez votre billet officiel et vos alertes de départ à moins de 2h directement sur l'écran de votre smartphone.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="phone-notif-actions">
+                        <button id="btn-request-phone-notif" class="btn-gold" style="width: auto; padding: 9px 18px; font-size: 13px; font-weight: 700;" onclick="app.requestPhoneNotifications()">
+                            <i class="fas fa-mobile-screen" style="margin-right: 6px;"></i> <span data-i18n="notifications.btn_enable">Activer sur mon Téléphone</span>
+                        </button>
+                        <button id="btn-test-phone-notif" class="btn-outline hidden" style="width: auto; padding: 8px 16px; font-size: 12px;" onclick="app.testPhoneNotification()">
+                            <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> <span data-i18n="notifications.btn_test">Tester notification</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-layout">
+
+                    <!-- Showcase Véhicule & Trajets -->
+                    <div class="vehicle-showcase">
+                        <div class="vehicle-img-container">
+                            <span class="vehicle-badge" style="z-index: 10; top: 20px; left: 20px;"><i
+                                    class="fas fa-star" style="margin-right: 5px;"></i><span
+                                    data-i18n="dashboard.showcase_badge">Classe VIP Connect</span></span>
+                            <div class="vehicle-gallery">
+                                <img src="images/Gemini_Generated_Image_nr5gn5nr5gn5nr5g.jfif" alt="Toyota Corolla Sièges"
+                                    class="vehicle-img-main">
+                                <div class="vehicle-img-side">
+                                    <img src="images/corolla_ext.jpg" alt="Toyota Corolla Extérieur"
+                                        class="vehicle-img-sub">
+                                    <img src="images/corolla_int_front.jpg" alt="Toyota Corolla Intérieur"
+                                        class="vehicle-img-sub">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="vehicle-details">
+                            <h2 data-i18n="dashboard.showcase_title">Navette Privée Douala ↔ Yaoundé</h2>
+                            <p data-i18n="dashboard.showcase_desc">Installez-vous confortablement dans nos Toyota haut
+                                de gamme climatisés. Voyage
+                                direct par autoroute, boissons rafraîchissantes offertes. Chaque voyage est limité à 3
+                                passagers maximum pour assurer votre intimité et votre confort.</p>
+
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <div class="price-tag">
+                                        <span class="price-value" data-i18n="home.price_amount">20 000 FCFA</span>
+                                        <span class="price-label" data-i18n="dashboard.showcase_price_label">Aller simple</span>
+                                    </div>
+                                    <div class="price-tag" style="background: rgba(197, 168, 128, 0.1); border-color: var(--text-white);">
+                                        <span class="price-value" style="color: var(--text-white);" data-i18n="home.price_roundtrip_amount">35 000 FCFA</span>
+                                        <span class="price-label" data-i18n="home.price_roundtrip_label">Aller-retour</span>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 10px;">
+                                    <a href="tel:+237699999999" class="btn-outline"
+                                        style="text-decoration: none; text-align: center;"><i class="fas fa-headset"
+                                            style="margin-right: 8px;"></i><span
+                                            data-i18n="dashboard.showcase_support">Service Client</span></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Réservation -->
+                    <div class="booking-panel">
+                        <h3 data-i18n="dashboard.book_title">Planifier votre trajet</h3>
+
+                        <form id="form-booking" onsubmit="app.handleBookingSubmit(event)" novalidate>
+
+                            <!-- Choix du type de trajet -->
+                            <div class="form-group">
+                                <label data-i18n="dashboard.book_trip_type">Type de trajet</label>
+                                <div class="trip-type-segmented" style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px;">
+                                    <label class="trip-type-pill" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-white);">
+                                        <input type="radio" name="trip-type" value="oneway" checked onchange="app.handleTripTypeChange()">
+                                        <span data-i18n="dashboard.trip_oneway">Aller simple (20 000 FCFA)</span>
+                                    </label>
+                                    <label class="trip-type-pill" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-white);">
+                                        <input type="radio" name="trip-type" value="roundtrip" onchange="app.handleTripTypeChange()">
+                                        <span data-i18n="dashboard.trip_roundtrip">Aller-retour (35 000 FCFA)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Choix du trajet -->
+                            <div class="form-group">
+                                <label for="book-route" data-i18n="dashboard.book_route">Trajet</label>
+                                <select id="book-route" class="form-control" onchange="app.updateDynamicSchedules()"
+                                    required>
+                                    <option value="Douala - Yaoundé">Douala → Yaoundé</option>
+                                    <option value="Yaoundé - Douala">Yaoundé → Douala</option>
+                                </select>
+                            </div>
+
+                            <!-- Choix du jour -->
+                            <div class="form-group">
+                                <label for="book-date" data-i18n="dashboard.book_date">Jour de départ</label>
+                                <input type="date" id="book-date" class="form-control"
+                                    onchange="app.updateDynamicSchedules()" required>
+                            </div>
+
+                            <!-- Choix du jour et heure de retour -->
+                            <div class="form-group hidden" id="return-date-group">
+                                <label for="book-return-date" data-i18n="dashboard.book_return_datetime">Date et Heure de retour</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="date" id="book-return-date" class="form-control" style="flex: 2;">
+                                    <select id="book-return-time" class="form-control" style="flex: 1;">
+                                        <option value="" disabled selected data-i18n="dashboard.book_return_time_placeholder">Heure</option>
+                                        <option value="05:00">05:00</option>
+                                        <option value="15:00">15:00</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Choix de l'horaire (Chargé dynamiquement) -->
+                            <div class="form-group">
+                                <label data-i18n="dashboard.book_schedules">Départs Disponibles (Horaires de la
+                                    journée)</label>
+                                <div id="schedules-container" class="schedule-grid">
+                                    <!-- Inséré dynamiquement en JS -->
+                                </div>
+                            </div>
+
+                            <!-- Choix du Véhicule -->
+                            <div class="form-group hidden" id="vehicle-selection-container">
+                                <label data-i18n="dashboard.book_vehicles">Véhicules Disponibles</label>
+                                <div id="vehicles-container" class="vehicle-selection-grid">
+                                    <!-- Inséré dynamiquement en JS -->
+                                </div>
+                            </div>
+
+                            <!-- Choix de la place -->
+                            <div class="form-group hidden" id="seat-selection-container">
+                                <label data-i18n="dashboard.book_seat">Sélectionnez votre place</label>
+                                <div class="seat-map-container" id="seat-map-container">
+                                    <!-- Inséré dynamiquement en JS -->
+                                </div>
+                            </div>
+
+                            <!-- Informations de Paiement -->
+                            <div class="form-group hidden" id="payment-info-container">
+                                <label for="book-momo-number" data-i18n="dashboard.book_momo_number">Numéro Mobile Money
+                                    (Payeur)</label>
+                                <div style="position: relative;">
+                                    <input type="tel" id="book-momo-number" class="form-control"
+                                        placeholder="6xx xx xx xx" required style="padding-left: 45px;"
+                                        data-i18n-placeholder="dashboard.book_momo_placeholder">
+                                    <span
+                                        style="position: absolute; left: 15px; top: 15px; color: var(--text-muted); font-size: 14px;"><i
+                                            class="fas fa-phone"></i></span>
+                                </div>
+                                <span
+                                    style="font-size: 11px; color: var(--text-muted); margin-top: 6px; display: block;"
+                                    data-i18n="dashboard.book_momo_desc">Le
+                                    paiement est traité immédiatement par Orange Money ou MTN MoMo.</span>
+
+                                <button type="submit" id="btn-book-action" class="btn-gold" style="margin-top: 15px;"
+                                    data-i18n="dashboard.book_pay_btn">
+                                    Réserver & Payer (20 000 FCFA)
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+                
+                <!-- Section Mes Réservations & Billets PDF (Historique du Voyageur) -->
+                <div class="user-reservations-panel" style="margin-top: 40px; background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(197, 168, 128, 0.25); border-radius: 16px; padding: 25px 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(197, 168, 128, 0.15); padding-bottom: 15px;">
+                        <div>
+                            <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-white); margin: 0; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-ticket-alt" style="color: var(--primary-gold);"></i>
+                                <span>Mes Réservations & Billets</span>
+                            </h3>
+                            <p style="font-size: 13px; color: var(--text-muted); margin: 5px 0 0 0;">
+                                Retrouvez vos cartes d'embarquement et téléchargez votre reçu officiel en PDF à tout moment.
+                            </p>
+                        </div>
+                        <button class="btn-outline" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="app.renderUserReservations()">
+                            <i class="fas fa-sync-alt" style="margin-right: 6px;"></i> Actualiser
+                        </button>
+                    </div>
+                    <div id="user-reservations-list">
+                        <!-- Rempli dynamiquement en JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PAGE AVIS CLIENTS -->
+        <section id="sec-reviews" class="section-container hidden">
+            <div class="container" style="max-width: 800px; margin: 40px auto;">
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 30px; color: var(--text-white);"
+                    data-i18n="reviews.title">Expériences de nos Voyageurs</h2>
+
+                <div class="card-premium" style="margin-bottom: 40px; padding: 25px;">
+                    <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-white);"
+                        data-i18n="reviews.card_title">Laissez votre avis</h3>
+                    <form id="form-review" onsubmit="app.submitReview(event)" novalidate>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label for="review-author" data-i18n="reviews.name_label">Nom / Prénom</label>
+                                <input type="text" id="review-author" class="form-control" placeholder="Votre nom"
+                                    data-i18n-placeholder="reviews.name_placeholder" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="review-role" data-i18n="reviews.role_label">Ville ou Profession
+                                    (Optionnel)</label>
+                                <input type="text" id="review-role" class="form-control"
+                                    placeholder="Ex: Douala, ou Cadre" data-i18n-placeholder="reviews.role_placeholder">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="review-stars" data-i18n="reviews.note_label">Note (sur 5)</label>
+                            <div class="star-rating-selector" id="star-selector">
+                                <i class="fa-solid fa-star" data-value="1"></i>
+                                <i class="fa-solid fa-star" data-value="2"></i>
+                                <i class="fa-solid fa-star" data-value="3"></i>
+                                <i class="fa-solid fa-star" data-value="4"></i>
+                                <i class="fa-solid fa-star" data-value="5"></i>
+                            </div>
+                            <input type="hidden" id="review-stars" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="review-text" data-i18n="reviews.text_label">Votre expérience avec VIP
+                                Connect</label>
+                            <textarea id="review-text" class="form-control" rows="4"
+                                placeholder="Racontez-nous votre voyage..."
+                                data-i18n-placeholder="reviews.text_placeholder" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;"
+                            data-i18n="reviews.submit_btn">Publier mon avis</button>
+                    </form>
+                </div>
+
+                <div id="reviews-grid" style="display: grid; gap: 20px;">
+                    <!-- Inséré dynamiquement -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ESPACE ADMINISTRATEUR (Séparé & Protégé) -->
+        <section id="sec-admin" class="section-container hidden">
+            <div class="admin-layout">
+
+                <!-- Sidebar Admin -->
+                <aside class="admin-sidebar">
+                    <div style="margin-bottom: 24px; text-align: center;">
+                        <span
+                            style="font-size: 12px; color: var(--text-white); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Console
+                            de Gestion</span>
+                    </div>
+                    <nav class="admin-nav">
+                        <a class="admin-nav-item active" onclick="app.showAdminTab('reservations', this)">
+                            <i class="fas fa-bookmark" style="width: 20px;"></i> Réservations
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('users', this)">
+                            <i class="fas fa-users" style="width: 20px;"></i> Utilisateurs
+                            <span id="admin-users-badge" class="badge"
+                                style="margin-left: auto; background: rgba(197, 168, 128, 0.25); color: #ffffff; font-size: 11px; padding: 2px 7px; border-radius: 10px;">0</span>
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('kyc', this)">
+                            <i class="fas fa-user-check" style="width: 20px;"></i> Validations CNI/Selfie
+                            <span id="admin-kyc-badge" class="badge badge-pending"
+                                style="margin-left: auto; display: none;">0</span>
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('finance', this)">
+                            <i class="fas fa-money-bill-wave" style="width: 20px;"></i> Suivi Paiements
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('vehicles', this)">
+                            <i class="fas fa-car" style="width: 20px;"></i> Véhicules & Horaires
+                        </a>
+                    </nav>
+                </aside>
+
+                <!-- Zone Contenu Admin -->
+                <div class="admin-content">
+
+                    <!-- TAB : RÉSERVATIONS -->
+                    <div id="admin-tab-reservations" class="admin-tab-content">
+                        <div class="admin-header">
+                            <h2 class="admin-title">Réservations Effectuées</h2>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="admin-search-res" class="form-control"
+                                    placeholder="Rechercher passager, n°..." style="width: 250px; padding: 8px 12px;"
+                                    oninput="app.filterReservationsTable()">
+                            </div>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date/Heure</th>
+                                        <th>Trajet</th>
+                                        <th>Passager</th>
+                                        <th>Téléphone</th>
+                                        <th>Transaction Pay</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-reservations-body">
+                                    <!-- Inséré dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : LISTE DE TOUS LES UTILISATEURS -->
+                    <div id="admin-tab-users" class="admin-tab-content hidden">
+                        <div class="admin-header" style="flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <h2 class="admin-title">Utilisateurs de la Plateforme</h2>
+                                <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0;">
+                                    Répertoire officiel de tous les comptes enregistrés. Cliquez sur un nom pour afficher sa fiche complète.
+                                </p>
+                            </div>
+                            <div class="admin-controls-bar" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                                <input type="text" id="admin-search-users" class="form-control admin-search-input"
+                                    placeholder="Rechercher nom, tél, email..." style="width: 240px; padding: 8px 12px;"
+                                    oninput="app.filterUsersTable()">
+                                <div class="admin-filters-grid" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <select id="admin-filter-users-kyc" class="form-control" style="width: 170px; padding: 8px 12px;" onchange="app.filterUsersTable()">
+                                        <option value="all">Tous les KYC</option>
+                                        <option value="approved">KYC Validé</option>
+                                        <option value="pending">KYC En attente</option>
+                                        <option value="rejected">KYC Rejeté</option>
+                                        <option value="none">KYC Non soumis</option>
+                                    </select>
+                                    <select id="admin-filter-users-role" class="form-control" style="width: 150px; padding: 8px 12px;" onchange="app.filterUsersTable()">
+                                        <option value="all">Tous les rôles</option>
+                                        <option value="admin">Administrateurs</option>
+                                        <option value="client">Voyageurs VIP</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KPI Cartes Statistiques Utilisateurs -->
+                        <div class="finance-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 25px;">
+                            <div class="stat-card" style="background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(197, 168, 128, 0.25);">
+                                <span class="stat-label"><i class="fas fa-users" style="color: var(--primary-gold); margin-right: 6px;"></i> Total Utilisateurs</span>
+                                <div class="stat-value" id="admin-users-total-count" style="color: var(--text-white); font-size: 28px;">0</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(16, 185, 129, 0.25);">
+                                <span class="stat-label"><i class="fas fa-id-card" style="color: #34d399; margin-right: 6px;"></i> KYC Approuvés</span>
+                                <div class="stat-value" id="admin-users-kyc-approved" style="color: #34d399; font-size: 28px;">0</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(245, 158, 11, 0.25);">
+                                <span class="stat-label"><i class="fas fa-hourglass-half" style="color: #fbbf24; margin-right: 6px;"></i> En Attente KYC</span>
+                                <div class="stat-value" id="admin-users-kyc-pending" style="color: #fbbf24; font-size: 28px;">0</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(197, 168, 128, 0.25);">
+                                <span class="stat-label"><i class="fas fa-user-shield" style="color: #c5a880; margin-right: 6px;"></i> Administrateurs</span>
+                                <div class="stat-value" id="admin-users-admin-count" style="color: var(--primary-gold); font-size: 28px;">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Tableau de la liste des utilisateurs -->
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nom & Prénom</th>
+                                        <th>Téléphone</th>
+                                        <th>Adresse Email</th>
+                                        <th>Statut KYC</th>
+                                        <th>Rôle Système</th>
+                                        <th>Trajets VIP</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-users-body">
+                                    <!-- Inséré dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : VALIDATION KYC -->
+                    <div id="admin-tab-kyc" class="admin-tab-content hidden">
+                        <div class="admin-header">
+                            <h2 class="admin-title">Dossiers d'identité (CNI / Passeport)</h2>
+                            <span style="font-size: 14px; color: var(--text-muted);"><i class="fas fa-lock"
+                                    style="margin-right: 5px;"></i>Accès Sécurisé et Journalisé</span>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date de Soumission</th>
+                                        <th>Utilisateur</th>
+                                        <th>N° Téléphone</th>
+                                        <th>N° Pièce d'Identité</th>
+                                        <th>Date Naissance</th>
+                                        <th>Statut KYC</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-kyc-body">
+                                    <!-- Inséré dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : SUIVI FINANCIER -->
+                    <div id="admin-tab-finance" class="admin-tab-content hidden">
+                        <div class="admin-header">
+                            <h2 class="admin-title">Suivi des Paiements Mobile Money</h2>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Chiffre d'Affaires Global</div>
+                                <div class="stat-value" id="stat-revenue">0 FCFA</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Transactions Validées</div>
+                                <div class="stat-value" id="stat-tx-count">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Tickets Vendus</div>
+                                <div class="stat-value" id="stat-tickets">0 places</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date Transaction</th>
+                                        <th>ID Paiement</th>
+                                        <th>Passager</th>
+                                        <th>Opérateur</th>
+                                        <th>Numéro de Débit</th>
+                                        <th>Montant</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-payments-body">
+                                    <!-- Inséré dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : GESTION DES VÉHICULES -->
+                    <div id="admin-tab-vehicles" class="admin-tab-content hidden">
+                        <div class="admin-header">
+                            <h2 class="admin-title">Disponibilité des Véhicules par Créneau</h2>
+                        </div>
+
+                        <div
+                            style="margin-bottom: 24px; display: flex; gap: 16px; align-items: center; background: rgba(255,255,255,0.01); border: 1px solid var(--border-light); padding: 20px; border-radius: 8px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="admin-vehicle-date">Date de référence</label>
+                                <input type="date" id="admin-vehicle-date" class="form-control"
+                                    style="width: 200px; padding: 10px;" onchange="app.loadAdminVehiclesGrid()">
+                            </div>
+                            <div style="margin-top: 20px; font-size: 13px; color: var(--text-muted);">
+                                Visualisez et ajustez l'occupation des places en direct pour chaque navette programmée.
+                            </div>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trajet</th>
+                                        <th>Heure Départ</th>
+                                        <th>Capacité Restante</th>
+                                        <th>Places Occupées</th>
+                                        <th>Statut du Véhicule</th>
+                                        <th>Action administrative</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-vehicles-body">
+                                    <!-- Inséré dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- OVERLAYS ET FENÊTRES MODALES -->
+
+    <!-- 1. MODALE DE PAIEMENT MOBILE MONEY -->
+    <div id="modal-payment" class="payment-modal hidden">
+        <div class="payment-container">
+            <button class="payment-close" onclick="app.closePaymentModal()">&times;</button>
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; text-align: center; margin-bottom: 10px; color: var(--text-white);"
+                data-i18n="payment_modal.title">
+                Paiement Sécurisé</h3>
+            <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 24px;"
+                data-i18n="payment_modal.subtitle">Sélectionnez
+                votre opérateur camerounais et procédez au paiement.</p>
+
+            <div class="payment-summary">
+                <div class="summary-row">
+                    <span data-i18n="payment_modal.summary_route">Trajet</span>
+                    <span id="summary-route">Douala → Yaoundé</span>
+                </div>
+                <div class="summary-row">
+                    <span data-i18n="payment_modal.summary_datetime">Date & Heure</span>
+                    <span id="summary-datetime">Mercredi 15 Mai, 10:00</span>
+                </div>
+                <div class="summary-row">
+                    <span data-i18n="payment_modal.summary_amount">Montant</span>
+                    <span id="summary-amount">20 000 FCFA</span>
+                </div>
+            </div>
+
+            <!-- Choix de l'opérateur MoMo -->
+            <div class="provider-select">
+                <div class="provider-card selected" onclick="app.selectPaymentProvider('Orange Money', this)">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg" alt="Orange Money"
+                        class="provider-img" style="border-radius: 6px;">
+                    <div class="provider-name">Orange Money</div>
+                </div>
+                <div class="provider-card" onclick="app.selectPaymentProvider('MTN MoMo', this)">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/New-mtn-logo.jpg" alt="MTN MoMo"
+                        class="provider-img" style="border-radius: 6px; width: 40px; height: 40px; object-fit: cover;">
+                    <div class="provider-name">MTN MoMo</div>
+                </div>
+            </div>
+
+            <!-- Bouton initier transaction -->
+            <button id="btn-trigger-payment" class="btn-gold" onclick="app.initiateMomoPayment()"
+                data-i18n="payment_modal.trigger_payment_btn">
+                Lancer la facturation (20 000 FCFA)
+            </button>
+
+            <!-- SIMULATEUR DE TÉLÉPHONE POUR PAIEMENT DÉCENTRALISÉ (USSD MOCK) -->
+            <div id="momo-ussd-simulator" class="hidden">
+                <div class="momo-simulator">
+                    <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;"
+                        data-i18n="payment_modal.momo_ussd_simulator">
+                        Simulateur d'autorisation Mobile Money</div>
+
+                    <div class="simulator-screen">
+                        <div class="simulator-prompt" id="simulator-prompt-text" data-i18n="payment_modal.ussd_prompt">
+                            Entrez votre code PIN pour valider le paiement de 20 000 FCFA à VIP Connect TRANSPORT.
+                        </div>
+                        <input type="password" id="sim-pin-input" class="simulator-input" maxlength="4"
+                            placeholder="••••">
+                        <div id="sim-error-message" style="color: var(--error); font-size: 11px;" class="hidden"></div>
+                    </div>
+
+                    <div class="simulator-buttons">
+                        <button class="sim-btn" onclick="app.cancelMomoSimulator()" style="flex: 1;"
+                            data-i18n="payment_modal.cancel_btn">Annuler</button>
+                        <button class="sim-btn sim-btn-confirm" onclick="app.confirmMomoSimulator()" style="flex: 1.5;"
+                            data-i18n="payment_modal.confirm_btn">Confirmer PIN</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2. LIGHTBOX VALIDATION KYC POUR L'ADMIN -->
+    <div id="lightbox-kyc" class="kyc-lightbox hidden">
+        <div class="kyc-lightbox-container">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-white);"><i
+                        class="fas fa-user-shield" style="color: var(--text-white); margin-right: 10px;"></i><span
+                        data-i18n="admin.lightbox_title">Examen
+                        des Pièces Justificatives</span></h3>
+                <button onclick="app.closeKycLightbox()"
+                    style="background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Détails de l'utilisateur sous examen -->
+            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_name">Nom du
+                        passager :</p>
+                    <p id="kyc-review-name" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_phone">N° de
+                        Téléphone :</p>
+                    <p id="kyc-review-phone" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_doc">Type & N° de
+                        document :</p>
+                    <p id="kyc-review-doc" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_dob">Date de
+                        Naissance / Âge :</p>
+                    <p id="kyc-review-dob" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                </div>
+            </div>
+
+            <!-- Grille d'images -->
+            <div class="kyc-photos-grid">
+                <div class="kyc-photo-item">
+                    <label data-i18n="admin.lightbox_recto">Recto CNI</label>
+                    <img id="kyc-img-recto" src="" alt="Recto CNI" class="kyc-photo-img" onclick="app.zoomImage(this)">
+                </div>
+                <div class="kyc-photo-item">
+                    <label data-i18n="admin.lightbox_verso">Verso CNI</label>
+                    <img id="kyc-img-verso" src="" alt="Verso CNI" class="kyc-photo-img" onclick="app.zoomImage(this)">
+                </div>
+                <div class="kyc-photo-item">
+                    <label data-i18n="admin.lightbox_selfie">Selfie Passager</label>
+                    <img id="kyc-img-selfie" src="" alt="Selfie" class="kyc-photo-img" onclick="app.zoomImage(this)">
+                </div>
+            </div>
+
+            <div class="alert-box alert-info" style="margin-bottom: 0;">
+                <p style="font-size: 12px; color: var(--text-muted);" data-i18n="admin.lightbox_audit_log"><i
+                        class="fas fa-info-circle" style="margin-right: 5px;"></i><strong>Journal d'audit :</strong>
+                    Toute action sur ce dossier
+                    (approbation ou rejet) sera consignée de manière permanente avec l'identifiant de la session
+                    administrative courante.</p>
+            </div>
+
+            <div class="kyc-actions">
+                <button class="btn-outline" style="border-color: var(--error); color: var(--error);"
+                    onclick="app.rejectKyc()" data-i18n="admin.lightbox_reject_btn">Rejeter le dossier</button>
+                <button class="btn-gold" style="width: auto; padding: 12px 30px;" onclick="app.approveKyc()"
+                    data-i18n="admin.lightbox_approve_btn">Valider
+                    l'identité</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Caméra (KYC en direct) -->
+    <div id="modal-camera" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px; padding: 20px; background: var(--bg-card); text-align: center;">
+            <h3 id="camera-modal-title" style="margin-bottom: 15px;">Prendre une photo</h3>
+            
+            <div style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; border: 2px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #000;">
+                <video id="camera-video" autoplay playsinline style="width: 100%; height: auto; display: block;"></video>
+                <!-- Guidage visuel (overlay) -->
+                <div id="camera-overlay-frame" style="position: absolute; top: 10%; left: 10%; right: 10%; bottom: 10%; border: 2px dashed rgba(255, 255, 255, 0.7); pointer-events: none; border-radius: 4px;"></div>
+            </div>
+            
+            <canvas id="camera-canvas" class="hidden"></canvas>
+            
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+                <button class="btn-outline" onclick="app.closeCamera()" data-i18n="kyc.camera_cancel">Annuler</button>
+                <button class="btn-gold" onclick="app.capturePhoto()" data-i18n="kyc.camera_capture"><i class="fas fa-camera"></i> Capturer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE FICHE COMPLÈTE UTILISATEUR (CONSOLE ADMIN) -->
+    <div id="modal-user-detail" class="modal-overlay hidden">
+        <div class="modal-content user-detail-modal-box" style="max-width: 740px; padding: 28px 32px; background: #12141c; border-radius: 16px; border: 1px solid rgba(197, 168, 128, 0.45); box-shadow: 0 25px 60px rgba(0,0,0,0.85); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; border-bottom: 1px solid rgba(197, 168, 128, 0.25); padding-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div id="user-detail-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c5a880, #9e7d47); color: #111; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.35); flex-shrink: 0;">
+                        VK
+                    </div>
+                    <div>
+                        <h3 id="user-detail-fullname" style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-white); margin: 0;">Vidal Kadjou</h3>
+                        <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                            <span id="user-detail-role-badge" class="badge" style="font-size: 11px;">Administrateur</span>
+                            <span id="user-detail-kyc-badge" class="badge badge-approved" style="font-size: 11px;">KYC Validé ✓</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="payment-close" onclick="app.closeUserDetailModal()" style="position: static; font-size: 28px; line-height: 1;">&times;</button>
+            </div>
+
+            <!-- Grille d'Informations Détaillées -->
+            <div class="user-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px;">
+                <!-- Coordonnées Générales -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(197, 168, 128, 0.2); border-radius: 12px; padding: 18px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: var(--primary-gold); font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;">
+                        <i class="fas fa-address-card" style="margin-right: 6px;"></i> Coordonnées & Accès
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Numéro de Téléphone</span>
+                        <strong id="user-detail-phone" style="font-size: 15px; color: var(--text-white); font-family: monospace;">+237 698 34 68 98</strong>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Adresse Email</span>
+                        <strong id="user-detail-email" style="font-size: 14px; color: var(--text-white); word-break: break-all;">user@example.com</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Statut du Compte</span>
+                        <span id="user-detail-status" style="font-size: 13px; color: #34d399; font-weight: 600;">Actif / Opérationnel</span>
+                    </div>
+                </div>
+
+                <!-- Qualité & Dossier KYC Soumis -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(197, 168, 128, 0.2); border-radius: 12px; padding: 18px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: var(--primary-gold); font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;">
+                        <i class="fas fa-shield-alt" style="margin-right: 6px;"></i> Qualité & Identité Soumise
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Type de Document Soumis</span>
+                        <strong id="user-detail-doc-type" style="font-size: 14px; color: var(--text-white);">CNI (Carte Nationale)</strong>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Numéro de Pièce d'Identité</span>
+                        <strong id="user-detail-doc-num" style="font-size: 14px; color: var(--primary-gold); font-family: monospace;">1122334455</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;">Date de Naissance</span>
+                        <span id="user-detail-dob" style="font-size: 13px; color: var(--text-white);">Non renseignée</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des Réservations et Voyages VIP -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(197, 168, 128, 0.2); border-radius: 12px; padding: 18px; margin-bottom: 22px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: var(--primary-gold); font-weight: 700; letter-spacing: 1px;">
+                        <i class="fas fa-ticket-alt" style="margin-right: 6px;"></i> Historique des Réservations (<span id="user-detail-res-count">0</span>)
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-white);">
+                        Total Cumulé : <strong id="user-detail-total-spent" style="color: #34d399;">0 FCFA</strong>
+                    </div>
+                </div>
+                <div id="user-detail-reservations-list" style="max-height: 200px; overflow-y: auto;">
+                    <!-- Rempli en JS -->
+                </div>
+            </div>
+
+            <!-- Actions de la modale -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn-outline" style="width: auto; padding: 10px 22px;" onclick="app.closeUserDetailModal()">Fermer</button>
+                <button id="user-detail-examine-kyc-btn" class="btn-gold hidden" style="width: auto; padding: 10px 22px;" onclick="app.openKycFromUserDetail()">
+                    <i class="fas fa-search-plus" style="margin-right: 6px;"></i> Examiner le KYC
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Ticket PDF -->
+    <!-- Modale Ticket PDF -->
+    <div id="modal-ticket" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 680px; padding: 0; background: #0f1015; border-radius: 16px; border: 1px solid rgba(197, 168, 128, 0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.8); overflow: hidden;">
+            
+            <!-- Conteneur qui sera converti en PDF -->
+            <div id="ticket-pdf-content" style="background-color: #ffffff; color: #111118; padding: 35px 30px; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                
+                <!-- En-tête VIP Connect avec badge officiel -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #c5a880; padding-bottom: 16px; margin-bottom: 22px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 24px; color: #9e7d47;">★</span>
+                            <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #111118; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">VIP CONNECT</h2>
+                        </div>
+                        <span style="display: block; font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">Transport Privé Inter-urbain Douala ↔ Yaoundé</span>
+                        <span style="display: inline-block; font-size: 10px; color: #9e7d47; background: rgba(197, 168, 128, 0.15); padding: 2px 8px; border-radius: 4px; margin-top: 5px; font-weight: 700; text-transform: uppercase;">Service Première Classe • Flotte Toyota</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="display: inline-block; background: #e6f4ea; color: #137333; border: 1px solid #34a853; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                            ✓ PAIEMENT VALIDÉ & CONFIRMÉ
+                        </span>
+                        <div style="font-size: 11px; color: #718096;">Réf. Réservation</div>
+                        <strong id="ticket-res-id" style="font-size: 18px; font-family: monospace; color: #111118; font-weight: 800;">RES-00000</strong>
+                    </div>
+                </div>
+
+                <!-- Section 1 : Identification du Passager -->
+                <div style="background: #faf8f5; border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;">
+                    <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #9e7d47; letter-spacing: 1.5px; margin-bottom: 10px;">
+                        1. Identification du Voyageur
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Nom</span>
+                            <strong id="ticket-lastname" style="font-size: 15px; color: #111118; text-transform: uppercase;">NOM</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Prénom</span>
+                            <strong id="ticket-firstname" style="font-size: 15px; color: #111118;">Prénom</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Téléphone (Contact)</span>
+                            <strong id="ticket-phone" style="font-size: 14px; color: #111118; font-family: monospace;">+237 6xx xx xx xx</strong>
+                        </div>
+                    </div>
+                    <!-- Rétro-compatibilité -->
+                    <span id="ticket-passenger" style="display: none;"></span>
+                </div>
+
+                <!-- Section 2 : Détails du Voyage & Type de Billet -->
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #c5a880; border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 12px;">
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Itinéraire Express</span>
+                            <strong id="ticket-route" style="font-size: 18px; color: #111118; font-weight: 800;">Douala → Yaoundé</strong>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Type de Billet</span>
+                            <span id="ticket-type" style="display: inline-block; background: #111118; color: #c5a880; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;">Aller simple</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Aller (Départ)</span>
+                            <strong id="ticket-departure-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
+                            <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
+                            <span id="ticket-departure-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
+                        </div>
+                        <div id="ticket-return-section" class="hidden">
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Retour</span>
+                            <strong id="ticket-return-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
+                            <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
+                            <span id="ticket-return-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Place Réservée</span>
+                            <strong id="ticket-seat" style="font-size: 15px; color: #111118; font-weight: 800;">Siège Avant</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Véhicule Assigné</span>
+                            <strong id="ticket-vehicle" style="font-size: 14px; color: #111118;">Véhicule 1</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3 : Justificatif et Informations de Paiement -->
+                <div style="background: #faf8f5; border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+                    <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #9e7d47; letter-spacing: 1.5px; margin-bottom: 10px;">
+                        2. Données Financières & Transaction de Paiement
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; align-items: center;">
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Montant Réglé</span>
+                            <strong id="ticket-amount" style="font-size: 20px; color: #9e7d47; font-weight: 800;">20 000 FCFA</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">ID Transaction (Paiement)</span>
+                            <strong id="ticket-tx-id" style="font-size: 13px; font-family: monospace; color: #111118; word-break: break-all;">OM-000000</strong>
+                        </div>
+                        <div>
+                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Date & Heure Paiement</span>
+                            <span id="ticket-payment-date" style="font-size: 12px; color: #111118; font-weight: 600;">--/--/----</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px; color: #4a5568;">
+                        <span style="color: #718096;">Mode de règlement :</span> <strong id="ticket-payment-provider">Orange Money</strong> &bull; <span style="color: #137333; font-weight: 700;">Statut : Encaissé & Validé</span>
+                    </div>
+                </div>
+
+                <!-- Section 4 : QR Code d'embarquement & Mentions légales -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e0; padding-top: 16px;">
+                    <div style="max-width: 70%;">
+                        <div style="font-size: 11px; font-weight: 700; color: #111118; margin-bottom: 4px;">
+                            <i class="fas fa-shield-alt" style="color: #9e7d47; margin-right: 5px;"></i> Billet Officiel VIP Connect (Document Valide)
+                        </div>
+                        <p style="font-size: 10px; color: #718096; margin: 0; line-height: 1.45;">
+                            Présentez cette réservation (format numérique ou imprimée) au chauffeur au point d'embarquement, 15 minutes avant l'heure de départ, accompagnée d'une pièce d'identité valide. Assistance client 24h/24 : +237 699 00 00 00.
+                        </p>
+                    </div>
+                    <div style="text-align: center; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: #fff;">
+                        <img id="ticket-qr" src="" alt="QR Code" style="width: 75px; height: 75px; display: block;">
+                        <span style="font-size: 8px; color: #718096; font-family: monospace; display: block; margin-top: 2px;">SCAN EMBARQ.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statut de délivrance Email du Billet PDF -->
+            <div id="ticket-email-status-bar" style="background: rgba(16, 185, 129, 0.12); border-top: 1px solid rgba(16, 185, 129, 0.3); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-envelope-circle-check" style="color: #34d399; font-size: 16px;"></i>
+                    <span style="font-size: 12.5px; color: #e2e8f0;">Billet officiel envoyé par email à : <strong id="ticket-email-target" style="color: #34d399;">--</strong></span>
+                </div>
+                <button class="btn-outline" style="width: auto; padding: 5px 12px; font-size: 11px; border-color: rgba(52, 211, 153, 0.4); color: #34d399;" onclick="app.resendTicketEmail()">
+                    <i class="fas fa-paper-plane" style="margin-right: 4px;"></i> <span data-i18n="ticket.resend_email">Renvoyer par Email</span>
+                </button>
+            </div>
+
+            <!-- Actions du Modal -->
+            <div style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; background: #16171e; border-top: 1px solid rgba(197, 168, 128, 0.25);">
+                <button class="btn-outline" style="width: auto; padding: 10px 22px; font-size: 14px;" onclick="app.closeTicketModal()" data-i18n="ticket.close">Fermer</button>
+                <button class="btn-gold" style="width: auto; padding: 11px 26px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.3);" onclick="app.downloadTicketPdf()" data-i18n="ticket.download">
+                    <i class="fas fa-file-pdf" style="margin-right: 8px;"></i> Télécharger ma réservation (PDF)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE POPUP PERSONNALISÉE VIP CONNECT (Remplacement de tous les pop-ups du navigateur) -->
+    <div id="vip-modal-dialog" class="vip-dialog-overlay hidden">
+        <div class="vip-dialog-card">
+            <button class="vip-dialog-close" onclick="app.closeCustomDialog()" aria-label="Fermer">&times;</button>
+            <div id="vip-dialog-icon-container" class="vip-dialog-icon icon-info">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <h3 id="vip-dialog-title" class="vip-dialog-title">Notification</h3>
+            <p id="vip-dialog-message" class="vip-dialog-message">Message détaillé.</p>
+
+            <div id="vip-dialog-input-container" class="form-group hidden" style="margin: 15px 0;">
+                <input type="text" id="vip-dialog-input" class="form-control" placeholder="" style="text-align: center;">
+            </div>
+
+            <div class="vip-dialog-actions">
+                <button id="vip-dialog-btn-cancel" class="btn-outline hidden" onclick="app.handleDialogCancel()">Annuler</button>
+                <button id="vip-dialog-btn-confirm" class="btn-gold" onclick="app.handleDialogConfirm()">D'accord</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRE DE NAVIGATION INFÉRIEURE MOBILE (APP STYLE SMARTPHONE) -->
+    <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Navigation principale mobile">
+        <!-- Rempli dynamiquement par app.updateMobileBottomBar() -->
+    </nav>
+
+    <!-- Pied de page -->
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-logo">VIP Connect</div>
+            <div class=" footer-links">
+                <a href="#" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.links_legal">Avis
+                    légaux</a>
+                <a href="#" style="color: var(--text-muted); text-decoration: none;"
+                    data-i18n="footer.links_privacy">Protection des données</a>
+                <a href="#" style="color: var(--text-muted); text-decoration: none;"
+                    data-i18n="footer.links_support">Support client</a>
+            </div>
+            <div class="footer-copyright" data-i18n="footer.copyright">
+                &copy; 2026 VIP Connect Transport Agency. Tous droits réservés.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script logique -->
+    <!-- Supabase Client JS SDK & Configuration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <!-- Librairie html2pdf pour générer le ticket -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
