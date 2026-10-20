@@ -174,5 +174,16 @@
   - Guides de cadrage personnalisés (rectangle CNI avec mention de guidage, ovale pour selfie avec effet miroir).
   - Contrôles ergonomiques complets : boutons tactiles larges `📸 Prendre la photo`, `❌ Annuler`, `🔄 Inverser caméra` et alternative `📁 Importer depuis la galerie`.
   - Fixation du système modal `.modal-overlay` en `position: fixed` à l'échelle de l'application pour empêcher toute anomalie de flux HTML.
-
-
+### Étape 14 : Persistance Totale de Session & Téléchargement / Envoi Garanti du Billet PDF
+- [x] **Persistance de Session Indéfinie (Anti-Déconnexion à la Fermeture)** :
+  - Migration de la clé `vip_current_session` de `sessionStorage` (qui s'effaçait immédiatement dès la fermeture du navigateur ou de la PWA) vers `localStorage`.
+  - Maintien automatique de la connexion de l'utilisateur ou de l'administrateur même après fermeture de l'application, fermeture de l'onglet ou redémarrage du smartphone.
+  - Déconnexion effectuée uniquement si l'utilisateur clique volontairement sur "Déconnexion" (purge conjointe `localStorage` et `sessionStorage`).
+- [x] **Téléchargement Garanti du Billet PDF de Réservation** :
+  - Remplacement de la dépendance CDN externe par une version locale intégrée `html2pdf.bundle.min.js` (905 Ko) mise en cache par le Service Worker (`CORE_ASSETS` version `vip-connect-v2`).
+  - Élimination des erreurs de sécurité *Tainted Canvas* : activation du mode `crossOrigin = 'anonymous'` et pré-conversion du QR code en `DataURI Base64` avant génération.
+  - Téléchargement mobile direct via Blob Object URL (`outputPdf('blob')`) et balise de téléchargement avec repli sur impression si nécessaire.
+- [x] **Envoi Automatique du Billet PDF Officiel par Email (Brevo Serverless)** :
+  - Déploiement de la fonction Serverless Vercel `/api/notifications/send-ticket-email` compatible runtime Node.js et Vercel Serverless.
+  - Envoi direct du billet scannable par email avec le fichier PDF officiel attaché (`Billet_VIP_Connect_RES-xxxxx.pdf`).
+  - Affichage de notifications précises à l'utilisateur lors de l'envoi de son billet.

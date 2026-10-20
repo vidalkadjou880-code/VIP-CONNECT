@@ -4,13 +4,14 @@
  * et les rappels de départ.
  */
 
-const CACHE_NAME = 'vip-connect-v1';
+const CACHE_NAME = 'vip-connect-v2';
 const CORE_ASSETS = [
     '/',
     '/index.html',
     '/style.css',
     '/app.js',
     '/supabase-client.js',
+    '/html2pdf.bundle.min.js',
     '/manifest.json',
     '/images/vip_connect_logo.png'
 ];

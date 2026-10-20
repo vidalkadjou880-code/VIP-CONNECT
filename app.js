@@ -536,7 +536,10 @@ const app = {
     // ROUTAGE & SESSIONS
     // -------------------------------------------------------------
     checkSession: function() {
-        const session = sessionStorage.getItem('vip_current_session');
+        const session = localStorage.getItem('vip_current_session') || sessionStorage.getItem('vip_current_session');
+        if (session && !localStorage.getItem('vip_current_session')) {
+            localStorage.setItem('vip_current_session', session);
+        }
         if (session) {
             const cleanSession = session.replace(/[\s\-\(\)\+]/g, '').replace(/^237/, '');
             const sessionLower = session.toLowerCase();
@@ -790,6 +793,7 @@ const app = {
             "Êtes-vous certain de vouloir vous déconnecter de votre compte VIP Connect ?",
             "Confirmation de Déconnexion",
             () => {
+                localStorage.removeItem('vip_current_session');
                 sessionStorage.removeItem('vip_current_session');
                 this.state.currentUser = null;
                 if (window.vipSupabase && window.vipSupabase.client) {
@@ -897,6 +901,7 @@ const app = {
                         window.history.replaceState(null, '', window.location.pathname);
                     }
 
+                    localStorage.setItem('vip_current_session', user.phone);
                     sessionStorage.setItem('vip_current_session', user.phone);
                     this.state.currentUser = user;
                     this.state.pending2FA = null;
@@ -973,6 +978,7 @@ const app = {
             // Administrateur connecté directement vers la console
             if (this.isAdminUser(user)) {
                 this.saveUsers();
+                localStorage.setItem('vip_current_session', user.phone);
                 sessionStorage.setItem('vip_current_session', user.phone);
                 this.state.currentUser = user;
                 this.updateHeaderMenu();
@@ -1184,6 +1190,7 @@ const app = {
 
         if (type === 'login') {
             this.promoteIfAdmin(user);
+            localStorage.setItem('vip_current_session', user.phone);
             sessionStorage.setItem('vip_current_session', user.phone);
             this.state.currentUser = user;
             this.saveUsers();
@@ -1206,6 +1213,7 @@ const app = {
                 this.state.users.push(user);
             }
             this.saveUsers();
+            localStorage.setItem('vip_current_session', user.phone);
             sessionStorage.setItem('vip_current_session', user.phone);
             this.state.currentUser = user;
             this.updateHeaderMenu();
@@ -3115,7 +3123,22 @@ const app = {
         const qrData = encodeURIComponent(`VIP-CONNECT|${resId}|${(ln || 'CLIENT').toUpperCase()}_${fn || ''}|${details.amount || 20000}FCFA|${details.route}|${details.date}|${txId || ''}`);
         const qrImg = document.getElementById('ticket-qr');
         if (qrImg) {
-            qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + qrData;
+            qrImg.crossOrigin = 'anonymous';
+            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + qrData;
+            qrImg.src = qrUrl;
+            // Pré-conversion en base64 DataURL pour éliminer les erreurs de tainted canvas
+            try {
+                fetch(qrUrl)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            if (reader.result && qrImg) qrImg.src = reader.result;
+                        };
+                        reader.readAsDataURL(blob);
+                    })
+                    .catch(() => {});
+            } catch (e) {}
         }
 
         // Mémoriser le ticket affiché pour le renvoi d'email
@@ -3138,10 +3161,11 @@ const app = {
         this.showSection('dashboard');
     },
 
-    downloadTicketPdf: function() {
+    downloadTicketPdf: async function() {
         const element = document.getElementById('ticket-pdf-content');
         if (!element) return;
         const resId = (document.getElementById('ticket-res-id') ? document.getElementById('ticket-res-id').innerText : 'RESERVATION').replace(/[^a-zA-Z0-9_-]/g, '');
+        const filename = `Billet_VIP_Connect_${resId}.pdf`;
         
         if (typeof html2pdf === 'undefined') {
             this.showToast("Génération PDF locale via navigateur...", "info");
@@ -3153,18 +3177,43 @@ const app = {
         
         const opt = {
             margin:       [8, 8, 8, 8],
-            filename:     `Billet_VIP_Connect_${resId}.pdf`,
+            filename:     filename,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
-        html2pdf().set(opt).from(element).save().then(() => {
+        try {
+            const worker = html2pdf().set(opt).from(element);
+            const pdfBlob = await worker.outputPdf('blob');
+            const blobUrl = URL.createObjectURL(pdfBlob);
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = blobUrl;
+            downloadLink.download = filename;
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            
+            setTimeout(() => {
+                if (downloadLink.parentNode) {
+                    downloadLink.parentNode.removeChild(downloadLink);
+                }
+                URL.revokeObjectURL(blobUrl);
+            }, 15000);
+
             this.showToast("Votre billet de réservation PDF a été téléchargé avec succès !", "success");
-        }).catch((err) => {
-            console.warn('html2pdf fallback vers impression:', err);
-            window.print();
-        });
+        } catch (err) {
+            console.warn('html2pdf outputPdf fallback vers standard .save():', err);
+            try {
+                await html2pdf().set(opt).from(element).save();
+                this.showToast("Votre billet de réservation PDF a été téléchargé avec succès !", "success");
+            } catch (err2) {
+                console.error('Erreur finale téléchargement PDF:', err2);
+                this.showToast("Ouverture de l'aperçu d'impression...", "warning");
+                window.print();
+            }
+        }
     },
 
     // Générer le billet en Base64 pour l'envoi par email (Brevo)
@@ -3175,13 +3224,25 @@ const app = {
             const opt = {
                 margin:       [8, 8, 8, 8],
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-            const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-            if (pdfDataUri && pdfDataUri.includes(',')) {
-                return pdfDataUri.split(',')[1];
-            }
+            const worker = html2pdf().set(opt).from(element);
+            const pdfBlob = await worker.outputPdf('blob');
+            if (!pdfBlob) return null;
+            return await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const result = reader.result;
+                    if (typeof result === 'string' && result.includes(',')) {
+                        resolve(result.split(',')[1]);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(pdfBlob);
+            });
         } catch (err) {
             console.warn('[PDF Base64 Generation] Note fallback:', err);
         }
@@ -3200,10 +3261,18 @@ const app = {
             return;
         }
 
-        this.showToast(`Envoi de votre billet officiel (PDF) à ${recipientEmail}...`, "info");
+        this.showToast(`Préparation et envoi du billet officiel (PDF) à ${recipientEmail}...`, "info");
+
+        // Pause de 400ms pour garantir le rendu complet du ticket et de son QR
+        await new Promise(r => setTimeout(r, 400));
 
         // Obtenir le PDF en Base64
-        const pdfBase64 = await this.getTicketPdfBase64();
+        let pdfBase64 = null;
+        try {
+            pdfBase64 = await this.getTicketPdfBase64();
+        } catch (e) {
+            console.warn('[sendTicketPdfByEmail] Erreur getTicketPdfBase64:', e);
+        }
 
         const payload = {
             toEmail: recipientEmail,
@@ -3235,6 +3304,11 @@ const app = {
                 this.showToast(`Votre billet de réservation PDF a été envoyé à ${recipientEmail} !`, "success");
             } else {
                 console.warn('[API send-ticket-email] Réponse:', data);
+                if (data.error && data.error.includes('BREVO_API_KEY')) {
+                    this.showToast("Note : La clé Brevo doit être configurée sur Vercel pour l'envoi direct par email.", "warning");
+                } else {
+                    this.showToast(`Notification email : ${data.error || 'Erreur d\'envoi'}`, "warning");
+                }
             }
         } catch (err) {
             console.warn('[API send-ticket-email] Exception:', err.message);
