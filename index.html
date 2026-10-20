@@ -594,28 +594,133 @@
                         <div class="upload-container">
                             <div class="form-group">
                                 <label data-i18n="kyc.upload_recto">1. Photo Recto de la CNI / Passeport</label>
-                                <div class="upload-box" id="drop-recto" onclick="app.openCamera('recto')">
-                                    <div class="upload-icon"><i class="fas fa-camera"></i></div>
-                                    <div class="upload-text" data-i18n="kyc.camera_open_recto"><span>Prendre la photo Recto</span></div>
-                                    <div id="preview-recto-container" class="hidden upload-preview-container"></div>
+                                <div class="upload-box" id="drop-recto" onclick="app.openCamera('recto', event)">
+                                    <!-- État Repos -->
+                                    <div class="upload-idle" id="idle-recto">
+                                        <div class="upload-icon"><i class="fas fa-camera"></i></div>
+                                        <div class="upload-text" data-i18n="kyc.camera_open_recto"><span>Prendre la photo Recto</span></div>
+                                        <span class="upload-subhint">Touchez ici pour ouvrir l'appareil photo</span>
+                                    </div>
+
+                                    <!-- Caméra Intégrée (S'affiche directement ici) -->
+                                    <div id="camera-box-recto" class="camera-inline-box hidden" onclick="event.stopPropagation()">
+                                        <div class="camera-view-wrapper">
+                                            <video id="camera-video-recto" autoplay playsinline muted class="camera-video-stream"></video>
+                                            <div class="camera-guide-overlay">
+                                                <div class="camera-guide-frame">
+                                                    <span><i class="fas fa-id-card"></i> Cadrez le Recto de votre pièce</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="camera-controls-bar">
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.closeCamera('recto', event)">
+                                                <i class="fas fa-times"></i> Annuler
+                                            </button>
+                                            <button type="button" class="btn-gold camera-btn-capture" onclick="app.capturePhoto('recto', event)">
+                                                <i class="fas fa-camera"></i> Prendre la photo
+                                            </button>
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.switchCameraFacing('recto', event)" title="Inverser caméra">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="camera-gallery-fallback">
+                                            <label class="camera-gallery-btn">
+                                                <i class="fas fa-images"></i> Ou importer depuis la galerie
+                                                <input type="file" id="file-recto" accept="image/*" class="hidden" onchange="app.handleFileSelect(event, 'recto')">
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aperçu de la photo capturée -->
+                                    <div id="preview-recto-container" class="hidden upload-preview-container" onclick="event.stopPropagation()"></div>
                                 </div>
                             </div>
 
                             <div class="form-group" id="verso-upload-group">
                                 <label data-i18n="kyc.upload_verso">2. Photo Verso de la CNI / Passeport</label>
-                                <div class="upload-box" id="drop-verso" onclick="app.openCamera('verso')">
-                                    <div class="upload-icon"><i class="fas fa-camera"></i></div>
-                                    <div class="upload-text" data-i18n="kyc.camera_open_verso"><span>Prendre la photo Verso</span></div>
-                                    <div id="preview-verso-container" class="hidden upload-preview-container"></div>
+                                <div class="upload-box" id="drop-verso" onclick="app.openCamera('verso', event)">
+                                    <!-- État Repos -->
+                                    <div class="upload-idle" id="idle-verso">
+                                        <div class="upload-icon"><i class="fas fa-camera"></i></div>
+                                        <div class="upload-text" data-i18n="kyc.camera_open_verso"><span>Prendre la photo Verso</span></div>
+                                        <span class="upload-subhint">Touchez ici pour ouvrir l'appareil photo</span>
+                                    </div>
+
+                                    <!-- Caméra Intégrée (S'affiche directement ici) -->
+                                    <div id="camera-box-verso" class="camera-inline-box hidden" onclick="event.stopPropagation()">
+                                        <div class="camera-view-wrapper">
+                                            <video id="camera-video-verso" autoplay playsinline muted class="camera-video-stream"></video>
+                                            <div class="camera-guide-overlay">
+                                                <div class="camera-guide-frame">
+                                                    <span><i class="fas fa-id-card"></i> Cadrez le Verso de votre pièce</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="camera-controls-bar">
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.closeCamera('verso', event)">
+                                                <i class="fas fa-times"></i> Annuler
+                                            </button>
+                                            <button type="button" class="btn-gold camera-btn-capture" onclick="app.capturePhoto('verso', event)">
+                                                <i class="fas fa-camera"></i> Prendre la photo
+                                            </button>
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.switchCameraFacing('verso', event)" title="Inverser caméra">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="camera-gallery-fallback">
+                                            <label class="camera-gallery-btn">
+                                                <i class="fas fa-images"></i> Ou importer depuis la galerie
+                                                <input type="file" id="file-verso" accept="image/*" class="hidden" onchange="app.handleFileSelect(event, 'verso')">
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aperçu de la photo capturée -->
+                                    <div id="preview-verso-container" class="hidden upload-preview-container" onclick="event.stopPropagation()"></div>
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label data-i18n="kyc.upload_selfie">3. Photo Selfie</label>
-                                <div class="upload-box" id="drop-selfie" onclick="app.openCamera('selfie')">
-                                    <div class="upload-icon"><i class="fas fa-user-circle"></i></div>
-                                    <div class="upload-text" data-i18n="kyc.camera_open_selfie"><span>Prendre un selfie en direct</span></div>
-                                    <div id="preview-selfie-container" class="hidden upload-preview-container"></div>
+                                <div class="upload-box" id="drop-selfie" onclick="app.openCamera('selfie', event)">
+                                    <!-- État Repos -->
+                                    <div class="upload-idle" id="idle-selfie">
+                                        <div class="upload-icon"><i class="fas fa-user-circle"></i></div>
+                                        <div class="upload-text" data-i18n="kyc.camera_open_selfie"><span>Prendre un selfie en direct</span></div>
+                                        <span class="upload-subhint">Touchez ici pour ouvrir la caméra selfie</span>
+                                    </div>
+
+                                    <!-- Caméra Intégrée (S'affiche directement ici) -->
+                                    <div id="camera-box-selfie" class="camera-inline-box hidden" onclick="event.stopPropagation()">
+                                        <div class="camera-view-wrapper">
+                                            <video id="camera-video-selfie" autoplay playsinline muted class="camera-video-stream"></video>
+                                            <div class="camera-guide-overlay">
+                                                <div class="camera-guide-frame camera-guide-oval">
+                                                    <span><i class="fas fa-user"></i> Cadrez votre visage</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="camera-controls-bar">
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.closeCamera('selfie', event)">
+                                                <i class="fas fa-times"></i> Annuler
+                                            </button>
+                                            <button type="button" class="btn-gold camera-btn-capture" onclick="app.capturePhoto('selfie', event)">
+                                                <i class="fas fa-camera"></i> Prendre la photo
+                                            </button>
+                                            <button type="button" class="btn-outline camera-btn-action" onclick="app.switchCameraFacing('selfie', event)" title="Inverser caméra">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="camera-gallery-fallback">
+                                            <label class="camera-gallery-btn">
+                                                <i class="fas fa-images"></i> Ou importer depuis la galerie
+                                                <input type="file" id="file-selfie" accept="image/*" class="hidden" onchange="app.handleFileSelect(event, 'selfie')">
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aperçu de la photo capturée -->
+                                    <div id="preview-selfie-container" class="hidden upload-preview-container" onclick="event.stopPropagation()"></div>
                                 </div>
                             </div>
                         </div>
@@ -1313,25 +1418,8 @@
         </div>
     </div>
 
-    <!-- Modale Caméra (KYC en direct) -->
-    <div id="modal-camera" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 500px; padding: 20px; background: var(--bg-card); text-align: center;">
-            <h3 id="camera-modal-title" style="margin-bottom: 15px;">Prendre une photo</h3>
-            
-            <div style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; border: 2px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #000;">
-                <video id="camera-video" autoplay playsinline style="width: 100%; height: auto; display: block;"></video>
-                <!-- Guidage visuel (overlay) -->
-                <div id="camera-overlay-frame" style="position: absolute; top: 10%; left: 10%; right: 10%; bottom: 10%; border: 2px dashed rgba(255, 255, 255, 0.7); pointer-events: none; border-radius: 4px;"></div>
-            </div>
-            
-            <canvas id="camera-canvas" class="hidden"></canvas>
-            
-            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
-                <button class="btn-outline" onclick="app.closeCamera()" data-i18n="kyc.camera_cancel">Annuler</button>
-                <button class="btn-gold" onclick="app.capturePhoto()" data-i18n="kyc.camera_capture"><i class="fas fa-camera"></i> Capturer</button>
-            </div>
-        </div>
-    </div>
+    <!-- Canvas invisible pour la capture haute résolution des photos KYC -->
+    <canvas id="camera-canvas" class="hidden"></canvas>
 
     <!-- MODALE FICHE COMPLÈTE UTILISATEUR (CONSOLE ADMIN) -->
     <div id="modal-user-detail" class="modal-overlay hidden">

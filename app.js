@@ -225,6 +225,9 @@ const app = {
                 this.updateDashboardKycUI();
             } else if (sectionId === 'admin') {
                 this.loadAdminData();
+                if (window.vipSupabase) {
+                    this.syncWithSupabase();
+                }
             } else if (sectionId === 'kyc-verification') {
                 this.renderKYCStatusAlert();
                 this.handleDocTypeChange();
@@ -335,17 +338,24 @@ const app = {
         }
     },
 
-    // Charge les données depuis le localStorage ou initialise des données de démo
+    // Charge les données depuis le localStorage ou initialise les données réelles
     loadDatabase: function() {
         const localUsers = localStorage.getItem('vip_users');
         const localReservations = localStorage.getItem('vip_reservations');
         const localPayments = localStorage.getItem('vip_payments');
 
+        // Nettoyage automatique des faux profils ou faux numéros de test résiduels
+        const mockPhones = ['671234567', '694567890', '650112233', '699445566', '699999999', '677777777', '688888888'];
+        const mockEmails = ['jp.kamga@business.cm', 'claire.ebelle@gmail.com', 'marc.ndongo@outlook.com', 'f.atangana@yahoo.fr'];
+
         if (localUsers) {
             let parsedUsers = [];
             try {
-                const mockPhones = ['699999999', '677777777', '688888888'];
-                parsedUsers = JSON.parse(localUsers).filter(u => !mockPhones.includes(u.phone));
+                parsedUsers = JSON.parse(localUsers).filter(u => {
+                    const phone = String(u.phone || '').replace(/[^0-9]/g, '');
+                    const email = String(u.email || '').toLowerCase().trim();
+                    return !mockPhones.includes(phone) && !mockEmails.includes(email);
+                });
             } catch(e) { parsedUsers = []; }
             parsedUsers.forEach(u => this.promoteIfAdmin(u));
             this.state.users = parsedUsers;
@@ -353,162 +363,51 @@ const app = {
             this.state.users = [];
         }
 
-        // S'assurer de la présence du super-administrateur et d'utilisateurs de référence
-        if (this.state.users.length === 0) {
-            this.state.users = [
-                {
-                    firstname: "Vidal",
-                    lastname: "Kadjou",
-                    phone: "+237698346898",
-                    email: "vidalkadjou880@gmail.com",
-                    password: "admin",
-                    isAdmin: true,
-                    is_admin: true,
-                    kyc: {
-                        status: "approved",
-                        docType: "cni",
-                        docNumber: "LT-2023-88901",
-                        dob: "1994-06-12",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
-                },
-                {
-                    firstname: "Jean-Paul",
-                    lastname: "Kamga",
-                    phone: "+237671234567",
-                    email: "jp.kamga@business.cm",
-                    password: "user123",
-                    isAdmin: false,
-                    is_admin: false,
-                    kyc: {
-                        status: "approved",
-                        docType: "cni",
-                        docNumber: "110294857",
-                        dob: "1988-03-24",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
-                },
-                {
-                    firstname: "Claire",
-                    lastname: "Ebelle",
-                    phone: "+237694567890",
-                    email: "claire.ebelle@gmail.com",
-                    password: "user123",
-                    isAdmin: false,
-                    is_admin: false,
-                    kyc: {
-                        status: "pending",
-                        docType: "passport",
-                        docNumber: "CM-PASS-772910",
-                        dob: "1995-11-08",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
-                },
-                {
-                    firstname: "Marc",
-                    lastname: "Ndongo",
-                    phone: "+237650112233",
-                    email: "marc.ndongo@outlook.com",
-                    password: "user123",
-                    isAdmin: false,
-                    is_admin: false,
-                    kyc: {
-                        status: "approved",
-                        docType: "cni",
-                        docNumber: "109847261",
-                        dob: "1982-07-19",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
-                },
-                {
-                    firstname: "Fabrice",
-                    lastname: "Atangana",
-                    phone: "+237699445566",
-                    email: "f.atangana@yahoo.fr",
-                    password: "user123",
-                    isAdmin: false,
-                    is_admin: false,
-                    kyc: {
-                        status: "none",
-                        docType: "",
-                        docNumber: "",
-                        dob: "",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
+        // S'assurer de la présence du Super Administrateur VIP Connect
+        const hasAdmin = this.state.users.some(u => this.isAdminUser(u));
+        if (!hasAdmin) {
+            this.state.users.unshift({
+                firstname: "Vidal",
+                lastname: "Kadjou",
+                phone: "+237698346898",
+                email: "vidalkadjou880@gmail.com",
+                password: "admin",
+                isAdmin: true,
+                is_admin: true,
+                kyc: {
+                    status: "approved",
+                    docType: "cni",
+                    docNumber: "ADMIN-VIP",
+                    dob: "1990-01-01",
+                    documents: { recto: "", verso: "", selfie: "" }
                 }
-            ];
-            localStorage.setItem('vip_users', JSON.stringify(this.state.users));
-        } else {
-            const hasAdmin = this.state.users.some(u => this.isAdminUser(u));
-            if (!hasAdmin) {
-                this.state.users.unshift({
-                    firstname: "Vidal",
-                    lastname: "Kadjou",
-                    phone: "+237698346898",
-                    email: "vidalkadjou880@gmail.com",
-                    password: "admin",
-                    isAdmin: true,
-                    is_admin: true,
-                    kyc: {
-                        status: "approved",
-                        docType: "cni",
-                        docNumber: "LT-2023-88901",
-                        dob: "1994-06-12",
-                        documents: { recto: "", verso: "", selfie: "" }
-                    }
-                });
-                localStorage.setItem('vip_users', JSON.stringify(this.state.users));
-            }
+            });
         }
+        localStorage.setItem('vip_users', JSON.stringify(this.state.users));
 
+        // Réservations : Strictement les vraies réservations de la base de données
         if (localReservations) {
             let parsedRes = [];
             try {
-                const mockPhones = ['699999999', '677777777', '688888888'];
-                parsedRes = JSON.parse(localReservations).filter(r => !mockPhones.includes(r.phone));
+                parsedRes = JSON.parse(localReservations).filter(r => !['VIP-RES-901', 'VIP-RES-902'].includes(r.id));
             } catch(e) { parsedRes = []; }
             this.state.reservations = parsedRes;
         } else {
-            this.state.reservations = [
-                {
-                    id: "VIP-RES-901",
-                    date: new Date().toISOString().split('T')[0],
-                    time: "05:00",
-                    route: "Douala - Yaoundé",
-                    passengerName: "Jean-Paul Kamga",
-                    phone: "+237671234567",
-                    txId: "OM-99201",
-                    amount: 20000,
-                    seatId: "front",
-                    vehicleId: 1
-                },
-                {
-                    id: "VIP-RES-902",
-                    date: new Date().toISOString().split('T')[0],
-                    time: "15:00",
-                    route: "Yaoundé - Douala",
-                    passengerName: "Marc Ndongo",
-                    phone: "+237650112233",
-                    txId: "MOMO-77120",
-                    amount: 20000,
-                    seatId: "back_left",
-                    vehicleId: 1
-                }
-            ];
-            localStorage.setItem('vip_reservations', JSON.stringify(this.state.reservations));
+            this.state.reservations = [];
         }
+        localStorage.setItem('vip_reservations', JSON.stringify(this.state.reservations));
 
+        // Paiements : Strictement les vrais paiements enregistrés
         if (localPayments) {
-            const mockPhones = ['699999999', '677777777', '688888888'];
             let parsedPay = [];
             try {
-                parsedPay = JSON.parse(localPayments).filter(p => !mockPhones.includes(p.phone));
+                parsedPay = JSON.parse(localPayments).filter(p => !['OM-99201', 'MOMO-77120'].includes(p.txId));
             } catch(e) { parsedPay = []; }
             this.state.payments = parsedPay;
-            localStorage.setItem('vip_payments', JSON.stringify(parsedPay));
         } else {
             this.state.payments = [];
         }
+        localStorage.setItem('vip_payments', JSON.stringify(this.state.payments));
         
         const localReviews = localStorage.getItem('vip_reviews');
         if (localReviews) {
@@ -566,7 +465,7 @@ const app = {
 
             let hasUpdates = false;
 
-            if (remoteUsers && remoteUsers.length > 0) {
+            if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
                 remoteUsers.forEach(u => this.promoteIfAdmin(u));
                 this.state.users = remoteUsers;
                 localStorage.setItem('vip_users', JSON.stringify(this.state.users));
@@ -590,32 +489,24 @@ const app = {
                         }
                     }
                 }
-            } else if (this.state.users && this.state.users.length > 0) {
-                this.state.users.forEach(u => window.vipSupabase.saveUser(u));
             }
 
-            if (remoteReservations && remoteReservations.length > 0) {
+            if (Array.isArray(remoteReservations)) {
                 this.state.reservations = remoteReservations;
                 localStorage.setItem('vip_reservations', JSON.stringify(this.state.reservations));
                 hasUpdates = true;
-            } else if (this.state.reservations && this.state.reservations.length > 0) {
-                this.state.reservations.forEach(r => window.vipSupabase.saveReservation(r));
             }
 
-            if (remotePayments && remotePayments.length > 0) {
+            if (Array.isArray(remotePayments)) {
                 this.state.payments = remotePayments;
                 localStorage.setItem('vip_payments', JSON.stringify(this.state.payments));
                 hasUpdates = true;
-            } else if (this.state.payments && this.state.payments.length > 0) {
-                this.state.payments.forEach(p => window.vipSupabase.savePayment(p));
             }
 
-            if (remoteReviews && remoteReviews.length > 0) {
+            if (Array.isArray(remoteReviews) && remoteReviews.length > 0) {
                 this.state.reviews = remoteReviews;
                 localStorage.setItem('vip_reviews', JSON.stringify(this.state.reviews));
                 hasUpdates = true;
-            } else if (this.state.reviews && this.state.reviews.length > 0) {
-                this.state.reviews.forEach(rv => window.vipSupabase.saveReview(rv));
             }
 
             this.checkSession();
@@ -1567,90 +1458,205 @@ const app = {
     },
 
     // -------------------------------------------------------------
-    // GESTION DE LA CAMÉRA EN DIRECT (KYC)
+    // GESTION DE LA CAMÉRA EN DIRECT (KYC INLINE - EMPLACEMENT EXACT)
     // -------------------------------------------------------------
-    openCamera: async function(type) {
+    stateCameraStreams: {},
+    stateCameraFacing: {},
+
+    openCamera: async function(type, event) {
+        if (event) event.stopPropagation();
+
+        // Si une autre caméra est déjà active, la refermer
+        ['recto', 'verso', 'selfie'].forEach(t => {
+            if (t !== type) this.closeCamera(t);
+        });
+
+        const idleEl = document.getElementById(`idle-${type}`);
+        const cameraBoxEl = document.getElementById(`camera-box-${type}`);
+        const previewEl = document.getElementById(`preview-${type}-container`);
+        const video = document.getElementById(`camera-video-${type}`);
+        const dropEl = document.getElementById(`drop-${type}`);
+
+        if (!cameraBoxEl || !video) return;
+
+        // Défilement automatique centré pour une vue parfaite sur smartphone
+        if (dropEl) {
+            dropEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Vérification de la compatibilité du navigateur
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            this.showToast(this.state.lang === 'fr' ? "Votre navigateur ne supporte pas la capture par caméra." : "Your browser does not support camera capture.", "error");
+            this.showToast(this.state.lang === 'fr' 
+                ? "Caméra non supportée directement. Utilisez l'option galerie ci-dessous." 
+                : "Camera not directly supported. Use the gallery option below.", "warning");
+            if (idleEl) idleEl.classList.add('hidden');
+            cameraBoxEl.classList.remove('hidden');
             return;
         }
 
-        this.state.currentCameraDocType = type;
-        const video = document.getElementById('camera-video');
-        const facingMode = type === 'selfie' ? 'user' : 'environment';
+        // Déterminer la caméra : user (frontale) pour selfie, environment (arrière) pour documents
+        const defaultFacing = type === 'selfie' ? 'user' : 'environment';
+        const facingMode = this.stateCameraFacing[type] || defaultFacing;
+        this.stateCameraFacing[type] = facingMode;
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: facingMode } 
-            });
+            const constraints = {
+                video: {
+                    facingMode: { ideal: facingMode },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
-            this.state.mediaStream = stream;
-            document.getElementById('modal-camera').classList.remove('hidden');
+            this.stateCameraStreams[type] = stream;
+
+            if (idleEl) idleEl.classList.add('hidden');
+            if (previewEl) previewEl.classList.add('hidden');
+            cameraBoxEl.classList.remove('hidden');
+
+            try {
+                await video.play();
+            } catch (playErr) {
+                console.warn("Lecture vidéo auto démarrée:", playErr);
+            }
         } catch (err) {
             console.error("Erreur d'accès à la caméra:", err);
-            this.showToast(this.state.lang === 'fr' ? "Impossible d'accéder à la caméra. Vérifiez les permissions." : "Cannot access camera. Check permissions.", "error");
+            this.showToast(this.state.lang === 'fr' 
+                ? "Accès caméra refusé ou indisponible. Vous pouvez choisir une photo de votre galerie." 
+                : "Camera access unavailable. You can choose a photo from your gallery.", "warning");
+            
+            if (idleEl) idleEl.classList.add('hidden');
+            cameraBoxEl.classList.remove('hidden');
+            const fileInput = document.getElementById(`file-${type}`);
+            if (fileInput) {
+                fileInput.click();
+            }
         }
     },
 
-    closeCamera: function() {
-        if (this.state.mediaStream) {
-            this.state.mediaStream.getTracks().forEach(track => track.stop());
-            this.state.mediaStream = null;
+    closeCamera: function(type, event) {
+        if (event) event.stopPropagation();
+
+        if (this.stateCameraStreams && this.stateCameraStreams[type]) {
+            this.stateCameraStreams[type].getTracks().forEach(track => track.stop());
+            delete this.stateCameraStreams[type];
         }
-        const video = document.getElementById('camera-video');
+
+        const video = document.getElementById(`camera-video-${type}`);
         if (video) video.srcObject = null;
-        document.getElementById('modal-camera').classList.add('hidden');
+
+        const cameraBoxEl = document.getElementById(`camera-box-${type}`);
+        if (cameraBoxEl) cameraBoxEl.classList.add('hidden');
+
+        const idleEl = document.getElementById(`idle-${type}`);
+        const previewEl = document.getElementById(`preview-${type}-container`);
+
+        const hasPhoto = this.state.currentUser && this.state.currentUser.tempDocs && this.state.currentUser.tempDocs[type];
+        if (hasPhoto) {
+            if (previewEl) previewEl.classList.remove('hidden');
+            if (idleEl) idleEl.classList.add('hidden');
+        } else {
+            if (idleEl) idleEl.classList.remove('hidden');
+            if (previewEl) previewEl.classList.add('hidden');
+        }
     },
 
-    capturePhoto: function() {
-        const video = document.getElementById('camera-video');
-        const canvas = document.getElementById('camera-canvas');
+    switchCameraFacing: async function(type, event) {
+        if (event) event.stopPropagation();
+        const current = this.stateCameraFacing[type] || (type === 'selfie' ? 'user' : 'environment');
+        this.stateCameraFacing[type] = current === 'user' ? 'environment' : 'user';
         
-        if (!video || !canvas) return;
+        // Stopper le flux en cours
+        if (this.stateCameraStreams && this.stateCameraStreams[type]) {
+            this.stateCameraStreams[type].getTracks().forEach(t => t.stop());
+            delete this.stateCameraStreams[type];
+        }
+
+        await this.openCamera(type, event);
+    },
+
+    capturePhoto: function(type, event) {
+        if (event) event.stopPropagation();
+
+        const video = document.getElementById(`camera-video-${type}`);
+        const canvas = document.getElementById('camera-canvas') || document.createElement('canvas');
+        
+        if (!video) return;
+
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+
+        canvas.width = width;
+        canvas.height = height;
 
         const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Dessiner l'image courante de la vidéo sur le canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Extraire l'image en Base64
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        const type = this.state.currentCameraDocType;
+        // Si selfie, effet miroir horizontal pour un rendu naturel
+        const facing = this.stateCameraFacing[type] || (type === 'selfie' ? 'user' : 'environment');
+        if (facing === 'user') {
+            context.translate(width, 0);
+            context.scale(-1, 1);
+        }
+        context.drawImage(video, 0, 0, width, height);
 
-        // Stocker temporairement dans l'état utilisateur
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+        this.applyDocumentImage(type, dataUrl);
+        this.closeCamera(type);
+        this.showToast(this.state.lang === 'fr' ? "Photo enregistrée avec succès !" : "Photo captured successfully!", "success");
+    },
+
+    handleFileSelect: function(event, type) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        this.processFile(file, type);
+    },
+
+    processFile: function(file, type) {
+        if (!file.type.match(/image.*/)) {
+            this.showToast(this.state.lang === 'fr' ? "Veuillez sélectionner un fichier image valide (JPG, PNG)." : "Please select a valid image file.", "error");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            this.applyDocumentImage(type, dataUrl);
+            this.closeCamera(type);
+            this.showToast(this.state.lang === 'fr' ? "Photo chargée depuis la galerie." : "Photo loaded from gallery.", "success");
+        };
+        reader.readAsDataURL(file);
+    },
+
+    applyDocumentImage: function(type, dataUrl) {
+        if (!this.state.currentUser) return;
         if (!this.state.currentUser.tempDocs) {
             this.state.currentUser.tempDocs = {};
         }
         this.state.currentUser.tempDocs[type] = dataUrl;
 
-        // Afficher la prévisualisation dans la dropzone
         const previewContainer = document.getElementById(`preview-${type}-container`);
+        const idleEl = document.getElementById(`idle-${type}`);
+
         if (previewContainer) {
             previewContainer.innerHTML = `
-                <img src="${dataUrl}" class="upload-preview" alt="Prévisualisation">
-                <button class="upload-remove" type="button" onclick="app.removeCapturedPhoto(event, '${type}')">
+                <img src="${dataUrl}" class="upload-preview" alt="Document ${type}">
+                <div class="preview-badge-success"><i class="fas fa-check-circle"></i> ${this.state.lang === 'fr' ? 'Photo enregistrée' : 'Photo saved'}</div>
+                <button class="upload-remove" type="button" onclick="app.removeCapturedPhoto(event, '${type}')" title="Supprimer ou reprendre">
                     <i class="fas fa-times"></i>
                 </button>
             `;
             previewContainer.classList.remove('hidden');
-            // Cacher l'icône de base
-            const dropzone = document.getElementById(`drop-${type}`);
-            if (dropzone) {
-                dropzone.querySelector('.upload-icon').style.display = 'none';
-                dropzone.querySelector('.upload-text').style.display = 'none';
-            }
         }
-
-        // Fermer la caméra après la capture
-        this.closeCamera();
+        if (idleEl) idleEl.classList.add('hidden');
     },
 
     removeCapturedPhoto: function(event, type) {
-        event.stopPropagation(); // Éviter de déclencher l'ouverture de la caméra
+        if (event) event.stopPropagation();
         
-        if (this.state.currentUser.tempDocs) {
+        if (this.state.currentUser && this.state.currentUser.tempDocs) {
             delete this.state.currentUser.tempDocs[type];
         }
 
@@ -1660,10 +1666,14 @@ const app = {
             previewContainer.innerHTML = '';
         }
 
-        const dropzone = document.getElementById(`drop-${type}`);
-        if (dropzone) {
-            dropzone.querySelector('.upload-icon').style.display = 'block';
-            dropzone.querySelector('.upload-text').style.display = 'block';
+        const idleEl = document.getElementById(`idle-${type}`);
+        if (idleEl) {
+            idleEl.classList.remove('hidden');
+        }
+
+        const cameraBoxEl = document.getElementById(`camera-box-${type}`);
+        if (cameraBoxEl) {
+            cameraBoxEl.classList.add('hidden');
         }
     },
 
@@ -2401,6 +2411,9 @@ const app = {
         // Rafraîchir les données de l'onglet spécifique
         this.loadAdminData();
         this.updateMobileBottomBar();
+        if (window.vipSupabase) {
+            this.syncWithSupabase();
+        }
     },
 
     updateAdminUsersBadge: function() {
@@ -2664,7 +2677,7 @@ const app = {
         });
 
         if (sorted.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">${this.t('admin.no_reservations')}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 36px 16px; color: var(--text-muted); font-size: 14px;"><i class="fas fa-ticket-alt" style="font-size: 26px; margin-bottom: 10px; display: block; color: rgba(197, 168, 128, 0.4);"></i> ${this.t('admin.no_reservations')}</td></tr>`;
             return;
         }
 

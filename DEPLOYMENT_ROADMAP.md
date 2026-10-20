@@ -161,3 +161,18 @@
   - Texte blanc contrasté avec icônes de couleurs adaptées et durée calibrée à 2.5 secondes.
 - [x] **Sécurisation du Flux de Déconnexion** : Réinitialisation propre de la barre supérieure et fermeture immédiate des éléments mobiles actifs.
 
+### Étape 13 : Données Administrateur 100% Réelles & Caméra KYC Intégrée en Place
+- [x] **Éradication des Données Fictives & Cohérence Base Supabase** :
+  - Suppression définitive des réservations factices `VIP-RES-901` et `VIP-RES-902` de la base de données Supabase Cloud et du code source.
+  - Nettoyage des faux utilisateurs résiduels (`Jean-Paul Kamga`, `Claire Ebelle`, etc.) dans `loadDatabase()` et purge automatique du `localStorage` au démarrage.
+  - La console administrateur n'affiche désormais que les réservations et utilisateurs réels enregistrés dans Supabase Cloud.
+  - Synchronisation automatique et dynamique de la Console Admin avec la base de données dès l'accès ou le changement d'onglet.
+- [x] **Expérience Caméra KYC Mobile Intégrée (En Ligne & Immédiate)** :
+  - Élimination du bloc caméra noir décalé qui apparaissait tout en bas de page.
+  - Intégration de la caméra directement dans l'élément cliqué (`Photo Recto`, `Photo Verso`, `Selfie en direct`).
+  - Défilement automatique centré (`scrollIntoView`) dès le clic sur mobile pour un confort tactile immédiat.
+  - Guides de cadrage personnalisés (rectangle CNI avec mention de guidage, ovale pour selfie avec effet miroir).
+  - Contrôles ergonomiques complets : boutons tactiles larges `📸 Prendre la photo`, `❌ Annuler`, `🔄 Inverser caméra` et alternative `📁 Importer depuis la galerie`.
+  - Fixation du système modal `.modal-overlay` en `position: fixed` à l'échelle de l'application pour empêcher toute anomalie de flux HTML.
+
+

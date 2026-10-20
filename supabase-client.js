@@ -65,30 +65,37 @@ const vipSupabase = {
     // USERS (vip_users)
     // -------------------------------------------------------------
     fetchUsers: async function() {
-        if (!this.client) return null;
+        if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_users').select('*');
             if (error) throw error;
             if (data && data.length > 0) {
-                return data.map(u => ({
-                    phone: u.phone,
-                    firstname: u.firstname,
-                    lastname: u.lastname,
-                    email: u.email,
-                    password: u.password,
-                    isAdmin: !!u.is_admin,
-                    kyc: u.kyc || { status: 'none' }
-                }));
+                const mockPhones = ['671234567', '694567890', '650112233', '699445566', '699999999', '677777777', '688888888'];
+                return data
+                    .filter(u => !mockPhones.includes(String(u.phone || '').replace(/[^0-9]/g, '')) && !String(u.email || '').includes('business.cm'))
+                    .map(u => ({
+                        phone: u.phone,
+                        firstname: u.firstname,
+                        lastname: u.lastname,
+                        email: u.email,
+                        password: u.password,
+                        isAdmin: !!u.is_admin,
+                        kyc: u.kyc || { status: 'none' }
+                    }));
             }
-            return null;
+            return [];
         } catch (err) {
             console.warn('Erreur fetchUsers Supabase:', err.message);
-            return null;
+            return [];
         }
     },
 
     saveUser: async function(user) {
         if (!this.client || !user || !user.phone) return;
+        // Ne jamais sauvegarder de faux comptes de test
+        const cleanPhone = String(user.phone || '').replace(/[^0-9]/g, '');
+        if (['671234567', '694567890', '650112233', '699445566'].includes(cleanPhone)) return;
+
         try {
             const payload = {
                 phone: user.phone,
@@ -111,33 +118,38 @@ const vipSupabase = {
     // RESERVATIONS (vip_reservations)
     // -------------------------------------------------------------
     fetchReservations: async function() {
-        if (!this.client) return null;
+        if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_reservations').select('*');
             if (error) throw error;
             if (data && data.length > 0) {
-                return data.map(r => ({
-                    id: r.id,
-                    date: r.date,
-                    time: r.time,
-                    route: r.route,
-                    phone: r.phone,
-                    passengerName: r.passenger_name,
-                    txId: r.tx_id,
-                    amount: Number(r.amount) || 20000,
-                    vehicleId: Number(r.vehicle_id) || 1,
-                    seatId: r.seat_id
-                }));
+                return data
+                    .filter(r => !['VIP-RES-901', 'VIP-RES-902'].includes(r.id))
+                    .map(r => ({
+                        id: r.id,
+                        date: r.date,
+                        time: r.time,
+                        route: r.route,
+                        phone: r.phone,
+                        passengerName: r.passenger_name,
+                        txId: r.tx_id,
+                        amount: Number(r.amount) || 20000,
+                        vehicleId: Number(r.vehicle_id) || 1,
+                        seatId: r.seat_id
+                    }));
             }
-            return null;
+            return [];
         } catch (err) {
             console.warn('Erreur fetchReservations Supabase:', err.message);
-            return null;
+            return [];
         }
     },
 
     saveReservation: async function(reservation) {
         if (!this.client || !reservation || !reservation.id) return;
+        // Ne jamais sauvegarder les réservations de test
+        if (['VIP-RES-901', 'VIP-RES-902'].includes(reservation.id)) return;
+
         try {
             const payload = {
                 id: reservation.id,
@@ -162,7 +174,7 @@ const vipSupabase = {
     // PAYMENTS (vip_payments)
     // -------------------------------------------------------------
     fetchPayments: async function() {
-        if (!this.client) return null;
+        if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_payments').select('*');
             if (error) throw error;
@@ -177,10 +189,10 @@ const vipSupabase = {
                     status: p.status
                 }));
             }
-            return null;
+            return [];
         } catch (err) {
             console.warn('Erreur fetchPayments Supabase:', err.message);
-            return null;
+            return [];
         }
     },
 
