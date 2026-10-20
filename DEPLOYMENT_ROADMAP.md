@@ -153,3 +153,11 @@
   - Message clair informant le voyageur que ses documents sont soumis et en attente de vérification par l'équipe administrative.
   - Bouton unique "D'accord" occupant 100% de la largeur pour un clic tactile aisé sur smartphone.
 
+### Étape 12 : Résolution du Bug Visuel de la Bande Blanche Latérale
+- [x] **Élimination de la Bande Blanche Téléphone** : Suppression du bloc CSS dupliqué `.toast` (`background: var(--bg-card)` blanc avec conflit `top: 20px` et `bottom: 24px` qui étirait le composant sur toute la hauteur de l'écran mobile).
+- [x] **Refonte des Notifications Toasts Smartphone** :
+  - Design sombre VIP Connect haut de gamme (`#151720` avec bordure or).
+  - Centrage en pilule flottante discrète en haut de l'écran (`top: 16px`, `left: 50%`, `transform: translateX(-50%)`, `bottom: auto`, `height: auto`).
+  - Texte blanc contrasté avec icônes de couleurs adaptées et durée calibrée à 2.5 secondes.
+- [x] **Sécurisation du Flux de Déconnexion** : Réinitialisation propre de la barre supérieure et fermeture immédiate des éléments mobiles actifs.
+

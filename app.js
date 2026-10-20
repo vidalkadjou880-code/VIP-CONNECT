@@ -904,6 +904,9 @@ const app = {
                 if (window.vipSupabase && window.vipSupabase.client) {
                     window.vipSupabase.client.auth.signOut().catch(() => {});
                 }
+                const nav = document.getElementById('navLinks');
+                if (nav) nav.classList.remove('mobile-active');
+                this.updateHeaderMenu();
                 this.showToast(this.t('toasts.logout_success'), 'info');
                 this.showSection('home-login');
             },
@@ -3809,24 +3812,25 @@ const app = {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         
-        let icon = '<i class="fas fa-info-circle"></i>';
-        if (type === 'success') icon = '<i class="fas fa-check-circle"></i>';
-        if (type === 'error') icon = '<i class="fas fa-exclamation-triangle"></i>';
+        let icon = '<i class="fas fa-info-circle" style="color: var(--primary-gold); font-size: 16px;"></i>';
+        if (type === 'success') icon = '<i class="fas fa-check-circle" style="color: #34d399; font-size: 16px;"></i>';
+        else if (type === 'error') icon = '<i class="fas fa-exclamation-triangle" style="color: #f87171; font-size: 16px;"></i>';
+        else if (type === 'warning') icon = '<i class="fas fa-triangle-exclamation" style="color: #fbbf24; font-size: 16px;"></i>';
 
         toast.innerHTML = `
             ${icon}
-            <span style="font-size:14px; font-weight:500;">${message}</span>
+            <span style="font-size:14px; font-weight:500; color: #ffffff;">${message}</span>
         `;
 
         document.body.appendChild(toast);
 
-        // Faire disparaître après 4 secondes
+        // Faire disparaître après 2.5 secondes
         setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+            toast.style.animation = 'fadeOut 0.25s ease-out forwards';
             setTimeout(() => {
                 toast.remove();
-            }, 300);
-        }, 4000);
+            }, 250);
+        }, 2500);
     },
 
     // -------------------------------------------------------------
