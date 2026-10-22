@@ -1052,6 +1052,12 @@
                             <i class="fas fa-car" style="width: 20px;"></i> Véhicules & Horaires
                         </a>
                     </nav>
+
+                    <div style="margin-top: 25px; padding: 0 6px;">
+                        <button type="button" class="btn-outline" style="width: 100%; font-size: 12px; padding: 9px 12px; border-color: rgba(197, 168, 128, 0.35); color: var(--primary-gold);" onclick="app.syncWithSupabase(true)">
+                            <i class="fas fa-sync-alt" style="margin-right: 6px;"></i> Actualiser données
+                        </button>
+                    </div>
                 </aside>
 
                 <!-- Zone Contenu Admin -->
@@ -1361,26 +1367,30 @@
             </div>
 
             <!-- Détails de l'utilisateur sous examen -->
-            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
+            <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; font-size: 14px;">
                 <div>
                     <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_name">Nom du
                         passager :</p>
-                    <p id="kyc-review-name" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                    <p id="kyc-review-name" style="font-weight: 600; color: var(--text-white); font-size: 15px;"></p>
                 </div>
                 <div>
                     <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_phone">N° de
                         Téléphone :</p>
-                    <p id="kyc-review-phone" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                    <p id="kyc-review-phone" style="font-weight: 600; color: var(--text-white); font-size: 15px;"></p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 4px;">Email (Notification) :</p>
+                    <p id="kyc-review-email" style="font-weight: 600; color: var(--primary-gold); font-size: 15px;"></p>
                 </div>
                 <div>
                     <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_doc">Type & N° de
                         document :</p>
-                    <p id="kyc-review-doc" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                    <p id="kyc-review-doc" style="font-weight: 600; color: var(--text-white); font-size: 15px;"></p>
                 </div>
                 <div>
                     <p style="color: var(--text-muted); margin-bottom: 4px;" data-i18n="admin.lightbox_dob">Date de
-                        Naissance / Âge :</p>
-                    <p id="kyc-review-dob" style="font-weight: 600; color: var(--text-white); font-size: 16px;"></p>
+                        Naissance :</p>
+                    <p id="kyc-review-dob" style="font-weight: 600; color: var(--text-white); font-size: 15px;"></p>
                 </div>
             </div>
 

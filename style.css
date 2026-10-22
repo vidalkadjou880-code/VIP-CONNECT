@@ -3135,6 +3135,166 @@ footer {
     color: #111;
 }
 
+/* ==========================================================================
+   KYC PENDING & APPROVED HERO CARDS (Expérience VIP Post-Soumission)
+   ========================================================================== */
+.kyc-pending-card {
+    text-align: center;
+    padding: 36px 24px;
+    background: linear-gradient(180deg, rgba(251, 191, 36, 0.08) 0%, rgba(18, 20, 28, 0.95) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 18px;
+    margin: 10px 0 25px 0;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+    animation: vipCardFadeIn 0.35s ease-out;
+}
+
+.kyc-pending-glow-badge {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 20px auto;
+    border-radius: 50%;
+    background: rgba(251, 191, 36, 0.12);
+    border: 2px solid #fbbf24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.3);
+}
+
+.kyc-pending-glow-badge i {
+    font-size: 32px;
+    color: #fbbf24;
+    animation: kycPulse 2.2s infinite ease-in-out;
+}
+
+@keyframes kycPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.12);
+        opacity: 1;
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+    }
+}
+
+.kyc-pending-title {
+    color: #fbbf24;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.5px;
+}
+
+.kyc-pending-desc {
+    color: var(--text-white);
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 520px;
+    margin: 0 auto 24px auto;
+}
+
+.kyc-status-summary-box {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 18px 22px;
+    max-width: 480px;
+    margin: 0 auto 26px auto;
+    text-align: left;
+}
+
+.kyc-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 13px;
+}
+
+.kyc-summary-row.no-border {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.kyc-summary-label {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.kyc-summary-val {
+    color: var(--text-white);
+    font-weight: 600;
+}
+
+.kyc-pending-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Carte Approved */
+.kyc-approved-card {
+    text-align: center;
+    padding: 36px 24px;
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.1) 0%, rgba(18, 20, 28, 0.95) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    border-radius: 18px;
+    margin: 10px 0 25px 0;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+    animation: vipCardFadeIn 0.35s ease-out;
+}
+
+.kyc-approved-glow-badge {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 20px auto;
+    border-radius: 50%;
+    background: rgba(52, 211, 153, 0.15);
+    border: 2px solid #34d399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 25px rgba(52, 211, 153, 0.3);
+}
+
+.kyc-approved-glow-badge i {
+    font-size: 34px;
+    color: #34d399;
+}
+
+.kyc-approved-title {
+    color: #34d399;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    font-family: 'Playfair Display', serif;
+}
+
+.kyc-approved-desc {
+    color: var(--text-white);
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+@keyframes vipCardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 
 

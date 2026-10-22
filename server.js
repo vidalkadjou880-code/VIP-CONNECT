@@ -429,11 +429,28 @@ const server = http.createServer((req, res) => {
   // -------------------------------------------------------------
   // API ROUTER : NOTIFICATIONS (EMAIL BREVO & PUSH SMARTPHONE)
   // -------------------------------------------------------------
+  const APP_SECURITY_TOKEN = (process.env.VIP_API_SECRET || 'VIP_CONNECT_SECURE_TOKEN_2026_x880').trim();
+
+  function verifyApiToken(req, res) {
+    const token = req.headers['x-vip-app-token'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+    if (!token || token !== APP_SECURITY_TOKEN) {
+      res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({
+        success: false,
+        error: 'Accès non autorisé : Jeton de sécurité VIP Connect requis.'
+      }));
+      return false;
+    }
+    return true;
+  }
+
   if (reqPath.startsWith('/api/notifications/')) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
 
-    // Statut du service de notifications
+    // Statut du service de notifications (Sécurisé par jeton)
     if (reqPath === '/api/notifications/status' && req.method === 'GET') {
+      if (!verifyApiToken(req, res)) return;
       res.writeHead(200);
       res.end(JSON.stringify({
         status: 'active',
@@ -445,8 +462,9 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Historique des notifications envoyées
+    // Historique des notifications envoyées (Sécurisé par jeton)
     if (reqPath === '/api/notifications/history' && req.method === 'GET') {
+      if (!verifyApiToken(req, res)) return;
       res.writeHead(200);
       res.end(JSON.stringify({
         success: true,
@@ -455,8 +473,9 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Envoi du Billet PDF par Email (Directement dans la boîte mail)
+    // Envoi du Billet PDF par Email (Directement dans la boîte mail - Sécurisé par jeton)
     if (reqPath === '/api/notifications/send-ticket-email' && req.method === 'POST') {
+      if (!verifyApiToken(req, res)) return;
       let body = '';
       req.on('data', chunk => {
         body += chunk;
@@ -524,8 +543,9 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Envoi du Rappel de Départ (à moins de 2h ou moins de 1h avant le voyage)
+    // Envoi du Rappel de Départ (à moins de 2h ou moins de 1h avant le voyage - Sécurisé par jeton)
     if (reqPath === '/api/notifications/send-reminder-email' && req.method === 'POST') {
+      if (!verifyApiToken(req, res)) return;
       let body = '';
       req.on('data', chunk => body += chunk);
 
@@ -576,6 +596,68 @@ const server = http.createServer((req, res) => {
           }));
         } catch (err) {
           console.error('[API send-reminder-email] Erreur:', err);
+          res.writeHead(500);
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Envoi de Notification de Statut KYC (Approbation ou Rejet - Sécurisé par jeton)
+    if (reqPath === '/api/notifications/send-kyc-status-email' && req.method === 'POST') {
+      if (!verifyApiToken(req, res)) return;
+      let body = '';
+      req.on('data', chunk => body += chunk);
+
+      req.on('end', async () => {
+        try {
+          const data = JSON.parse(body || '{}');
+          const toEmail = (data.toEmail || data.email || '').trim().toLowerCase();
+          const status = (data.status || '').trim().toLowerCase();
+          const passengerName = (data.passengerName || data.name || (data.firstname ? `${data.firstname} ${data.lastname || ''}` : '')).trim() || 'Voyageur VIP';
+          const motif = (data.motif || data.comments || '').trim();
+
+          if (!toEmail || !toEmail.includes('@')) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, error: 'Adresse email destinataire invalide' }));
+            return;
+          }
+
+          if (status !== 'approved' && status !== 'rejected') {
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, error: 'Statut invalide (approved ou rejected attendu)' }));
+            return;
+          }
+
+          const { buildKycStatusEmailHtml } = require('./api/notifications/send-kyc-status-email.js');
+          const htmlContent = buildKycStatusEmailHtml({
+            status,
+            passengerName,
+            motif,
+            docType: data.docType
+          });
+
+          const subject = status === 'approved' 
+            ? '✓ Félicitations ! Votre compte VIP Connect a été validé' 
+            : '⚠️ Mise à jour requise : Votre dossier d\'identité VIP Connect';
+
+          const result = await sendBrevoEmail({
+            toEmail,
+            toName: passengerName,
+            subject,
+            htmlContent,
+            attachments: []
+          });
+
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: result.success,
+            status,
+            emailSentTo: toEmail,
+            ...result
+          }));
+        } catch (err) {
+          console.error('[API send-kyc-status-email] Erreur:', err);
           res.writeHead(500);
           res.end(JSON.stringify({ success: false, error: err.message }));
         }

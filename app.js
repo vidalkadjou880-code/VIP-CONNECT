@@ -54,6 +54,15 @@ const app = {
                 this.updateDynamicSchedules();
             }
         }, 30000); // Toutes les 30s
+
+        // Synchroniser automatiquement lorsque l'onglet redevient actif
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.state.activeSection === 'admin' && this.isAdminUser(this.state.currentUser)) {
+                if (window.vipSupabase) {
+                    this.syncWithSupabase(false).then(() => this.loadAdminData());
+                }
+            }
+        });
     },
 
     // -------------------------------------------------------------
@@ -223,16 +232,22 @@ const app = {
                     }
                 }
                 this.updateDashboardKycUI();
+                this.stopAdminAutoSync();
             } else if (sectionId === 'admin') {
                 this.loadAdminData();
+                this.startAdminAutoSync();
                 if (window.vipSupabase) {
-                    this.syncWithSupabase();
+                    this.syncWithSupabase(false).then(() => this.loadAdminData());
                 }
             } else if (sectionId === 'kyc-verification') {
+                this.stopAdminAutoSync();
                 this.renderKYCStatusAlert();
                 this.handleDocTypeChange();
             } else if (sectionId === 'reviews') {
+                this.stopAdminAutoSync();
                 this.renderReviews();
+            } else {
+                this.stopAdminAutoSync();
             }
 
             // Mettre à jour les modales/lightboxes ouvertes
@@ -466,8 +481,20 @@ const app = {
             let hasUpdates = false;
 
             if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
-                remoteUsers.forEach(u => this.promoteIfAdmin(u));
-                this.state.users = remoteUsers;
+                // Fusion intelligente entre utilisateurs distants et utilisateurs locaux
+                const userMap = new Map();
+                remoteUsers.forEach(u => {
+                    this.promoteIfAdmin(u);
+                    const cleanPhone = String(u.phone || '').replace(/[^0-9]/g, '');
+                    if (cleanPhone) userMap.set(cleanPhone, u);
+                });
+                (this.state.users || []).forEach(localU => {
+                    const cleanPhone = String(localU.phone || '').replace(/[^0-9]/g, '');
+                    if (cleanPhone && !userMap.has(cleanPhone)) {
+                        userMap.set(cleanPhone, localU);
+                    }
+                });
+                this.state.users = Array.from(userMap.values());
                 localStorage.setItem('vip_users', JSON.stringify(this.state.users));
                 hasUpdates = true;
 
@@ -475,7 +502,7 @@ const app = {
                 if (this.state.currentUser) {
                     const currClean = (this.state.currentUser.phone || '').replace(/[\s\-\(\)\+]/g, '').replace(/^237/, '');
                     const currEmail = (this.state.currentUser.email || '').toLowerCase();
-                    const refreshed = remoteUsers.find(u => {
+                    const refreshed = this.state.users.find(u => {
                         const uPhone = (u.phone || '').replace(/[\s\-\(\)\+]/g, '').replace(/^237/, '');
                         const uEmail = (u.email || '').toLowerCase();
                         return (uPhone && uPhone === currClean) || (uEmail && uEmail === currEmail);
@@ -871,8 +898,20 @@ const app = {
                     let user = this.state.users.find(u => u.email === email);
 
                     // Si inscription en attente, finaliser les informations utilisateur
-                    if (this.state.pending2FA && this.state.pending2FA.user && this.state.pending2FA.email === email) {
-                        const pending = this.state.pending2FA.user;
+                    let pending = (this.state.pending2FA && this.state.pending2FA.email === email) ? this.state.pending2FA.user : null;
+                    if (!pending) {
+                        try {
+                            const cached = localStorage.getItem('vip_pending_2fa');
+                            if (cached) {
+                                const parsed = JSON.parse(cached);
+                                if (parsed && parsed.email === email) {
+                                    pending = parsed.user;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+
+                    if (pending) {
                         if (!user) {
                             user = pending;
                             this.state.users.push(user);
@@ -880,6 +919,7 @@ const app = {
                             Object.assign(user, pending);
                         }
                         this.saveUsers();
+                        try { localStorage.removeItem('vip_pending_2fa'); } catch(e) {}
                     }
 
                     if (!user) {
@@ -1059,6 +1099,23 @@ const app = {
             }
         };
 
+        // 1. Enregistrement IMMÉDIAT du compte dans l'état local et dans Supabase (visible sans délai pour l'admin)
+        const existingIdx = this.state.users.findIndex(u => u.phone === phone || u.email === email);
+        if (existingIdx >= 0) {
+            this.state.users[existingIdx] = pendingUser;
+        } else {
+            this.state.users.push(pendingUser);
+        }
+        this.saveUsers();
+        if (window.vipSupabase) {
+            window.vipSupabase.saveUser(pendingUser).catch(console.warn);
+        }
+
+        // 2. Persistance dans localStorage pour ne jamais perdre l'inscription si l'email s'ouvre dans un autre onglet
+        try {
+            localStorage.setItem('vip_pending_2fa', JSON.stringify({ user: pendingUser, email: email, type: 'register' }));
+        } catch (e) {}
+
         this.initiate2FA({
             user: pendingUser,
             email: email,
@@ -1080,9 +1137,13 @@ const app = {
         this.showSection('verify-otp');
         this.startOtpCountdown(60);
 
-        // Envoyer la requête réelle à Supabase Auth
+        // Envoyer la requête réelle à Supabase Auth avec les métadonnées passager
         if (window.vipSupabase && email) {
-            window.vipSupabase.sendAuthOtp(email).then(res => {
+            window.vipSupabase.sendAuthOtp(email, {
+                firstname: user.firstname || '',
+                lastname: user.lastname || '',
+                phone: user.phone || ''
+            }).then(res => {
                 if (!res.success) {
                     console.warn("Supabase Auth sendAuthOtp Notice:", res.error);
                 } else {
@@ -1213,6 +1274,10 @@ const app = {
                 this.state.users.push(user);
             }
             this.saveUsers();
+            if (window.vipSupabase) {
+                window.vipSupabase.saveUser(user).catch(console.warn);
+            }
+            try { localStorage.removeItem('vip_pending_2fa'); } catch (e) {}
             localStorage.setItem('vip_current_session', user.phone);
             sessionStorage.setItem('vip_current_session', user.phone);
             this.state.currentUser = user;
@@ -1357,56 +1422,139 @@ const app = {
     renderKYCStatusAlert: function() {
         const user = this.state.currentUser;
         const container = document.getElementById('kyc-status-alert');
+        const formKyc = document.getElementById('form-kyc');
+        const kycHeaderIntro = document.querySelector('#sec-kyc-verification .card-premium > div:first-child');
         if (!container || !user) return;
 
-        if (user.kyc.status === 'none') {
+        if (!user.kyc || user.kyc.status === 'none') {
+            if (formKyc) formKyc.classList.remove('hidden');
+            if (kycHeaderIntro) kycHeaderIntro.style.display = 'block';
             container.innerHTML = `
                 <div class="alert-box alert-warning">
                     ${this.t('kyc.status_none')}
                 </div>
             `;
-            document.getElementById('btn-submit-kyc').disabled = false;
-            document.getElementById('btn-submit-kyc').innerText = this.t('kyc.submit_btn');
-        } else if (user.kyc.status === 'pending') {
-            container.innerHTML = `
-                <div class="alert-box alert-warning" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; border-radius: 8px; padding: 14px 16px;">
-                    <i class="fas fa-hourglass-half" style="margin-right: 8px;"></i>
-                    ${this.t('kyc.status_pending_redirect')}
-                </div>
-            `;
-            // Pré-remplir le formulaire en mode consultation
-            if (document.getElementById('kyc-firstname')) document.getElementById('kyc-firstname').value = user.kyc.firstname || user.firstname;
-            if (document.getElementById('kyc-lastname')) document.getElementById('kyc-lastname').value = user.kyc.lastname || user.lastname;
-            if (document.getElementById('kyc-doc-number')) document.getElementById('kyc-doc-number').value = user.kyc.docNumber || '';
-            if (document.getElementById('kyc-dob')) document.getElementById('kyc-dob').value = user.kyc.dob || '';
-            
-            // Désactiver le bouton de soumission
             const submitBtn = document.getElementById('btn-submit-kyc');
             if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-clock" style="margin-right: 6px;"></i> Dossier en cours d\'examen';
+                submitBtn.disabled = false;
+                submitBtn.innerText = this.t('kyc.submit_btn');
             }
+        } else if (user.kyc.status === 'pending') {
+            // MASQUER ENTIÈREMENT LE FORMULAIRE DE SOUMISSION (Aucun champ résiduel visible)
+            if (formKyc) {
+                formKyc.classList.add('hidden');
+            }
+            if (kycHeaderIntro) {
+                kycHeaderIntro.style.display = 'none';
+            }
+
+            // Réinitialiser les champs de saisie pour garantir la sécurité et la confidentialité
+            const kycFirstnameEl = document.getElementById('kyc-firstname');
+            const kycLastnameEl = document.getElementById('kyc-lastname');
+            const kycDocNumberEl = document.getElementById('kyc-doc-number');
+            const kycDobEl = document.getElementById('kyc-dob');
+            if (kycFirstnameEl) kycFirstnameEl.value = '';
+            if (kycLastnameEl) kycLastnameEl.value = '';
+            if (kycDocNumberEl) kycDocNumberEl.value = '';
+            if (kycDobEl) kycDobEl.value = '';
+
+            const rawDate = user.kyc.submittedAt || user.kyc.updated_at || new Date().toISOString();
+            let dateStr = 'Récemment';
+            try {
+                const d = new Date(rawDate);
+                dateStr = d.toLocaleDateString(this.state.lang === 'fr' ? 'fr-FR' : 'en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            } catch(e) {}
+
+            const docTypeLabel = user.kyc.docType === 'passport' 
+                ? (this.state.lang === 'fr' ? 'Passeport Officiel' : 'Official Passport')
+                : (this.state.lang === 'fr' ? 'Carte Nationale d\'Identité (CNI)' : 'National ID Card (CNI)');
+
+            container.innerHTML = `
+                <div class="kyc-pending-card">
+                    <div class="kyc-pending-glow-badge">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <h2 class="kyc-pending-title">${this.state.lang === 'fr' ? 'Dossier en cours de vérification' : 'Verification in Progress'}</h2>
+                    <p class="kyc-pending-desc">
+                        ${this.state.lang === 'fr'
+                            ? "Vos documents d'identité ont bien été enregistrés et sont actuellement examinés par notre équipe administrative. La réservation de navettes sera débloquée dès l'approbation de votre compte."
+                            : "Your identity documents have been successfully recorded and are currently being reviewed by our administrative team. Shuttle booking will be unlocked upon account approval."}
+                    </p>
+
+                    <div class="kyc-status-summary-box">
+                        <div class="kyc-summary-row">
+                            <span class="kyc-summary-label">${this.state.lang === 'fr' ? 'Statut du compte' : 'Account Status'}</span>
+                            <span class="badge badge-pending"><i class="fas fa-clock"></i> ${this.state.lang === 'fr' ? 'Examen en cours' : 'Under Review'}</span>
+                        </div>
+                        <div class="kyc-summary-row">
+                            <span class="kyc-summary-label">${this.state.lang === 'fr' ? 'Pièce enregistrée' : 'Submitted Document'}</span>
+                            <span class="kyc-summary-val">${docTypeLabel}</span>
+                        </div>
+                        <div class="kyc-summary-row">
+                            <span class="kyc-summary-label">${this.state.lang === 'fr' ? 'Date de transmission' : 'Submission Date'}</span>
+                            <span class="kyc-summary-val">${dateStr}</span>
+                        </div>
+                        <div class="kyc-summary-row no-border">
+                            <span class="kyc-summary-label">${this.state.lang === 'fr' ? 'Notification' : 'Notification'}</span>
+                            <span class="kyc-summary-val" style="color: var(--primary-gold);"><i class="fas fa-bell"></i> ${this.state.lang === 'fr' ? 'Par email dès validation' : 'By email upon approval'}</span>
+                        </div>
+                    </div>
+
+                    <div class="kyc-pending-actions">
+                        <button type="button" class="btn-gold" style="width: auto; padding: 12px 24px;" onclick="app.showSection('dashboard')">
+                            <i class="fas fa-home" style="margin-right: 8px;"></i> ${this.state.lang === 'fr' ? 'Retour au Tableau de Bord' : 'Go to Dashboard'}
+                        </button>
+                        <button type="button" class="btn-outline" style="width: auto; padding: 12px 20px;" onclick="app.syncWithSupabase(true)">
+                            <i class="fas fa-sync-alt" style="margin-right: 8px;"></i> ${this.state.lang === 'fr' ? 'Actualiser mon statut' : 'Refresh Status'}
+                        </button>
+                    </div>
+                </div>
+            `;
         } else if (user.kyc.status === 'rejected') {
+            if (formKyc) formKyc.classList.remove('hidden');
+            if (kycHeaderIntro) kycHeaderIntro.style.display = 'block';
             container.innerHTML = `
-                <div class="alert-box alert-warning" style="background: rgba(255, 77, 77, 0.15);">
-                    ${this.t('kyc.status_rejected', { motif: user.kyc.comments || "Pièces illisibles" })}
+                <div class="alert-box alert-warning" style="background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.4); color: #ff6b6b; padding: 18px 20px; border-radius: 12px; margin-bottom: 25px;">
+                    <div style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">
+                        <i class="fas fa-times-circle" style="margin-right: 8px;"></i> ${this.t('kyc.status_rejected', { motif: user.kyc.comments || "Documents flous ou non conformes" })}
+                    </div>
+                    <p style="font-size: 13px; margin: 0; color: #f0f0f0;">
+                        ${this.state.lang === 'fr' 
+                            ? "Veuillez reprendre les photos de votre pièce d'identité ou selfie de façon nette et soumettre à nouveau le formulaire ci-dessous."
+                            : "Please retake clear photos of your ID document or selfie and resubmit the form below."}
+                    </p>
                 </div>
             `;
-            document.getElementById('btn-submit-kyc').disabled = false;
-            document.getElementById('btn-submit-kyc').innerText = this.t('kyc.submit_btn');
+            const submitBtn = document.getElementById('btn-submit-kyc');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = this.t('kyc.submit_btn');
+            }
         } else if (user.kyc.status === 'approved') {
+            if (formKyc) formKyc.classList.add('hidden');
+            if (kycHeaderIntro) kycHeaderIntro.style.display = 'none';
             container.innerHTML = `
-                <div class="alert-box alert-success">
-                    ${this.t('kyc.status_approved')}
+                <div class="kyc-approved-card">
+                    <div class="kyc-approved-glow-badge">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="kyc-approved-title">${this.state.lang === 'fr' ? 'Identité Validée & Compte VIP Actif' : 'Identity Verified & VIP Account Active'}</h2>
+                    <p class="kyc-approved-desc">
+                        ${this.state.lang === 'fr'
+                            ? `Félicitations <strong>${user.firstname}</strong> ! Vos documents d'identité ont été vérifiés et certifiés avec succès. Vous avez désormais un accès illimité à l'ensemble de nos navettes Première Classe VIP Connect.`
+                            : `Congratulations <strong>${user.firstname}</strong>! Your identity documents have been successfully verified and approved. You now have full access to all VIP Connect First Class shuttles.`}
+                    </p>
+                    <div style="margin-top: 25px;">
+                        <button type="button" class="btn-gold" style="width: auto; padding: 12px 28px;" onclick="app.showSection('dashboard')">
+                            <i class="fas fa-car" style="margin-right: 8px;"></i> ${this.state.lang === 'fr' ? 'Réserver une navette maintenant' : 'Book a Shuttle Now'}
+                        </button>
+                    </div>
                 </div>
             `;
-            document.getElementById('btn-submit-kyc').disabled = true;
-            document.getElementById('btn-submit-kyc').innerText = this.t('kyc.validated_badge');
-            
-            // Rediriger après 2 secondes vers le dashboard
-            setTimeout(() => {
-                this.showSection('dashboard');
-            }, 2000);
         }
     },
 
@@ -1800,23 +1948,31 @@ const app = {
         delete user.tempDocs;
         this.state.currentUser = userInDb;
         this.saveUsers();
-        
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-clock" style="margin-right: 6px;"></i> Dossier en cours d\'examen';
+        if (window.vipSupabase) {
+            await window.vipSupabase.saveUser(userInDb);
+        }
+
+        // Réinitialiser et masquer entièrement le formulaire KYC (plus aucun champ ni photo apparente)
+        const formKycEl = document.getElementById('form-kyc');
+        if (formKycEl) {
+            formKycEl.reset();
+            formKycEl.classList.add('hidden');
         }
 
         console.log("Enregistrement réussi. Documents enregistrés en attente de validation admin.");
-        this.showModalAlert(
-            "Vos documents d'identité ont été transmis avec succès !\n\nVotre dossier est désormais en cours d'examen par notre équipe administrative.\nVous recevrez une notification dès que votre compte sera validé.",
-            "Documents Soumis avec Succès",
-            "success"
-        );
         this.renderKYCStatusAlert();
         this.updateHeaderMenu();
         if (typeof this.updateMobileBottomBar === 'function') {
             this.updateMobileBottomBar();
         }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        this.showModalAlert(
+            "Vos documents d'identité ont été transmis avec succès !\n\nVotre dossier est désormais en cours d'examen par notre équipe administrative.\nVous recevrez une notification dès que votre compte sera validé.",
+            "Documents Soumis avec Succès",
+            "success"
+        );
         console.log("--- FIN DE LA SOUMISSION KYC ---");
     },
 
@@ -2392,7 +2548,26 @@ const app = {
         this.updateAdminUsersBadge();
     },
 
-    showAdminTab: function(tabId, tabButton) {
+    startAdminAutoSync: function() {
+        if (this.state.adminSyncInterval) clearInterval(this.state.adminSyncInterval);
+        // Synchroniser en arrière-plan toutes les 20 secondes quand l'admin est sur la console
+        this.state.adminSyncInterval = setInterval(async () => {
+            if (this.state.activeSection === 'admin' && this.isAdminUser(this.state.currentUser)) {
+                if (window.vipSupabase) {
+                    await this.syncWithSupabase(false);
+                }
+            }
+        }, 20000);
+    },
+
+    stopAdminAutoSync: function() {
+        if (this.state.adminSyncInterval) {
+            clearInterval(this.state.adminSyncInterval);
+            this.state.adminSyncInterval = null;
+        }
+    },
+
+    showAdminTab: async function(tabId, tabButton) {
         this.state.activeAdminTab = tabId;
         
         // Mettre à jour l'état actif dans la barre latérale
@@ -2417,11 +2592,11 @@ const app = {
         if (activeTab) activeTab.classList.remove('hidden');
 
         // Rafraîchir les données de l'onglet spécifique
+        if (window.vipSupabase) {
+            await this.syncWithSupabase(false);
+        }
         this.loadAdminData();
         this.updateMobileBottomBar();
-        if (window.vipSupabase) {
-            this.syncWithSupabase();
-        }
     },
 
     updateAdminUsersBadge: function() {
@@ -2801,10 +2976,16 @@ const app = {
 
         this.state.currentReviewUserPhone = userPhone;
 
-        document.getElementById('kyc-review-name').innerText = `${user.firstname} ${user.lastname}`;
-        document.getElementById('kyc-review-phone').innerText = user.phone;
-        document.getElementById('kyc-review-doc').innerText = `N° ${user.kyc.docNumber}`;
-        document.getElementById('kyc-review-dob').innerText = `${user.kyc.dob}`;
+        const nameEl = document.getElementById('kyc-review-name');
+        if (nameEl) nameEl.innerText = `${user.firstname} ${user.lastname}`;
+        const phoneEl = document.getElementById('kyc-review-phone');
+        if (phoneEl) phoneEl.innerText = user.phone;
+        const emailEl = document.getElementById('kyc-review-email');
+        if (emailEl) emailEl.innerText = user.email || 'Email non renseigné';
+        const docEl = document.getElementById('kyc-review-doc');
+        if (docEl) docEl.innerText = `N° ${user.kyc.docNumber || 'Non renseigné'}`;
+        const dobEl = document.getElementById('kyc-review-dob');
+        if (dobEl) dobEl.innerText = `${user.kyc.dob || 'Non renseigné'}`;
 
         // Assigner les images
         const imgRecto = document.getElementById('kyc-img-recto');
@@ -2812,21 +2993,23 @@ const app = {
         const imgSelfie = document.getElementById('kyc-img-selfie');
 
         // Gérer le cas d'images réelles base64 ou démo
-        imgRecto.src = user.kyc.documents.recto === 'cni-recto-mock' ? 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?q=80&w=300&auto=format&fit=crop' : user.kyc.documents.recto;
-        imgVerso.src = user.kyc.documents.verso === 'cni-verso-mock' ? 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=300&auto=format&fit=crop' : user.kyc.documents.verso;
-        imgSelfie.src = user.kyc.documents.selfie === 'selfie-mock' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop' : user.kyc.documents.selfie;
+        if (imgRecto) imgRecto.src = (user.kyc.documents && user.kyc.documents.recto === 'cni-recto-mock') ? 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?q=80&w=300&auto=format&fit=crop' : ((user.kyc.documents && user.kyc.documents.recto) || '');
+        if (imgVerso) imgVerso.src = (user.kyc.documents && user.kyc.documents.verso === 'cni-verso-mock') ? 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=300&auto=format&fit=crop' : ((user.kyc.documents && user.kyc.documents.verso) || '');
+        if (imgSelfie) imgSelfie.src = (user.kyc.documents && user.kyc.documents.selfie === 'selfie-mock') ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop' : ((user.kyc.documents && user.kyc.documents.selfie) || '');
 
         // Masquer/Afficher les boutons d'actions d'approbation selon le statut
         const actions = lightbox.querySelector('.kyc-actions');
-        if (user.kyc.status !== 'pending') {
-            const statusLabel = user.kyc.status === 'approved' ? this.t('admin.status_approved') : this.t('admin.status_rejected');
-            actions.innerHTML = `<span style="color:var(--text-muted); font-size:14px; font-weight:600;"><i class="fas fa-info-circle"></i> ${this.t('admin.lightbox_treated', { status: statusLabel })}</span>
-                                 <button class="btn-outline" style="margin-left:20px; padding: 8px 16px;" onclick="app.closeKycLightbox()">${this.t('admin.lightbox_close')}</button>`;
-        } else {
-            actions.innerHTML = `
-                <button class="btn-outline" style="border-color: var(--error); color: var(--error);" onclick="app.rejectKyc()" data-i18n="admin.lightbox_reject_btn">${this.t('admin.lightbox_reject_btn')}</button>
-                <button class="btn-gold" style="width: auto; padding: 12px 30px;" onclick="app.approveKyc()" data-i18n="admin.lightbox_approve_btn">${this.t('admin.lightbox_approve_btn')}</button>
-            `;
+        if (actions) {
+            if (user.kyc.status !== 'pending') {
+                const statusLabel = user.kyc.status === 'approved' ? this.t('admin.status_approved') : this.t('admin.status_rejected');
+                actions.innerHTML = `<span style="color:var(--text-muted); font-size:14px; font-weight:600;"><i class="fas fa-info-circle"></i> ${this.t('admin.lightbox_treated', { status: statusLabel })}</span>
+                                     <button class="btn-outline" style="margin-left:20px; padding: 8px 16px;" onclick="app.closeKycLightbox()">${this.t('admin.lightbox_close')}</button>`;
+            } else {
+                actions.innerHTML = `
+                    <button class="btn-outline" style="border-color: var(--error); color: var(--error);" onclick="app.rejectKyc()" data-i18n="admin.lightbox_reject_btn">${this.t('admin.lightbox_reject_btn')}</button>
+                    <button class="btn-gold" style="width: auto; padding: 12px 30px;" onclick="app.approveKyc()" data-i18n="admin.lightbox_approve_btn">${this.t('admin.lightbox_approve_btn')}</button>
+                `;
+            }
         }
 
         lightbox.classList.remove('hidden');
@@ -2838,7 +3021,7 @@ const app = {
         this.state.currentReviewUserPhone = null;
     },
 
-    approveKyc: function() {
+    approveKyc: async function() {
         const phone = this.state.currentReviewUserPhone;
         if (!phone) return;
 
@@ -2847,9 +3030,15 @@ const app = {
             user.kyc.status = 'approved';
             user.kyc.comments = 'Identité certifiée conforme.';
             this.saveUsers();
+            if (window.vipSupabase) {
+                await window.vipSupabase.saveUser(user);
+            }
             this.showToast(this.t('toasts.kyc_approved', { name: user.firstname }), "success");
             this.closeKycLightbox();
             this.loadAdminData();
+
+            // Notification automatique par e-mail
+            this.sendKycStatusEmail(user, 'approved');
         }
     },
 
@@ -2861,22 +3050,78 @@ const app = {
             "Veuillez indiquer le motif du rejet des documents KYC :",
             "Documents d'identité illisibles ou non conformes.",
             "Motif de Rejet KYC",
-            (motif) => {
+            async (motif) => {
                 if (motif === null) return; // Annulé
                 const user = this.state.users.find(u => u.phone === phone);
                 if (user) {
                     user.kyc.status = 'rejected';
                     user.kyc.comments = motif || 'Documents d\'identité jugés invalides ou illisibles.';
                     this.saveUsers();
+                    if (window.vipSupabase) {
+                        await window.vipSupabase.saveUser(user);
+                    }
                     this.showModalAlert(`Le dossier KYC de ${user.firstname} a été rejeté avec succès.`, "Dossier Rejeté", "warning");
                     this.closeKycLightbox();
                     this.loadAdminData();
+
+                    // Notification automatique par e-mail avec le motif
+                    this.sendKycStatusEmail(user, 'rejected', motif);
                 }
             },
             null,
             "Confirmer le rejet",
             "Annuler"
         );
+    },
+
+    sendKycStatusEmail: async function(user, status, motif = '') {
+        if (!user) return;
+        const recipientEmail = (user.email || '').trim();
+        const passengerName = `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'Voyageur VIP';
+
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+            console.warn(`[sendKycStatusEmail] Pas d'adresse email valide pour l'utilisateur ${user.phone}`);
+            this.showToast(`Note : Aucun email renseigné pour ${passengerName}. L'utilisateur ne recevra pas de notification par email.`, "warning");
+            return;
+        }
+
+        const isApproved = status === 'approved';
+        this.showToast(`Envoi de l'email de notification (${isApproved ? 'Validation' : 'Rejet'}) à ${recipientEmail}...`, "info");
+
+        try {
+            const response = await fetch('/api/notifications/send-kyc-status-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-VIP-App-Token': 'VIP_CONNECT_SECURE_TOKEN_2026_x880'
+                },
+                body: JSON.stringify({
+                    toEmail: recipientEmail,
+                    passengerName: passengerName,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    phone: user.phone,
+                    status: status,
+                    motif: motif,
+                    docType: user.kyc ? user.kyc.docType : 'cni'
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.showToast(`Email de notification (${isApproved ? 'Compte Validé' : 'Dossier Rejeté'}) envoyé avec succès à ${recipientEmail} !`, "success");
+            } else {
+                console.warn('[sendKycStatusEmail] Réponse API:', data);
+                if (data.error && data.error.includes('BREVO_API_KEY')) {
+                    this.showToast("Note : La clé BREVO_API_KEY doit être configurée sur Vercel pour la délivrance des emails.", "warning");
+                } else {
+                    this.showToast(`Notification email : ${data.error || 'Erreur lors de l\'envoi'}`, "warning");
+                }
+            }
+        } catch (err) {
+            console.error('[sendKycStatusEmail] Exception:', err);
+            this.showToast("Impossible de contacter le service de notification d'email.", "warning");
+        }
     },
 
     zoomImage: function(img) {
@@ -3296,7 +3541,10 @@ const app = {
         try {
             const response = await fetch('/api/notifications/send-ticket-email', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-VIP-App-Token': 'VIP_CONNECT_SECURE_TOKEN_2026_x880'
+                },
                 body: JSON.stringify(payload)
             });
             const data = await response.json();
@@ -3610,7 +3858,10 @@ const app = {
             try {
                 await fetch('/api/notifications/send-reminder-email', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-VIP-App-Token': 'VIP_CONNECT_SECURE_TOKEN_2026_x880'
+                    },
                     body: JSON.stringify({
                         toEmail: recipientEmail,
                         passengerName: res.passengerName || (this.state.currentUser ? `${this.state.currentUser.firstname} ${this.state.currentUser.lastname}` : 'Voyageur VIP'),

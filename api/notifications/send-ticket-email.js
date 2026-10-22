@@ -1,5 +1,36 @@
 const https = require('https');
 
+const APP_SECURITY_TOKEN = (process.env.VIP_API_SECRET || 'VIP_CONNECT_SECURE_TOKEN_2026_x880').trim();
+
+// Limiteur de débit en mémoire pour prévenir les abus de spam email (max 6 requêtes/minute par IP)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 6;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now - entry.startTime > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(ip, { count: 1, startTime: now });
+    return true;
+  }
+  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+// Nettoyage régulier du cache de rate limit
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now - entry.startTime > RATE_LIMIT_WINDOW_MS * 2) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
 function buildTicketEmailHtml(data) {
   const qrData = encodeURIComponent(`VIP-CONNECT|${data.resId}|${(data.passengerName || 'CLIENT').toUpperCase()}|${data.amount || '20000 FCFA'}|${data.route}|${data.date}`);
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
@@ -119,7 +150,7 @@ function buildTicketEmailHtml(data) {
           </tr>
           <tr>
             <td style="background-color: #10121a; padding: 20px 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: #718096;">
-              <p style="margin: 0 0 5px 0;">Assistance Voyageur 24h/24 : <strong>+237 699 00 00 00</strong> | contact@vipconnect.cm</p>
+              <p style="margin: 0 0 5px 0;">Assistance Voyageur 24h/24 : <strong>+237 698 34 68 98</strong> | vidalkadjou880@gmail.com</p>
               <p style="margin: 0;">© 2026 VIP Connect Transport Agency. Tous droits réservés.</p>
             </td>
           </tr>
@@ -135,11 +166,11 @@ function buildTicketEmailHtml(data) {
 function sendBrevoEmail({ apiKey, senderEmail, senderName, toEmail, toName, subject, htmlContent, attachments = [] }) {
   return new Promise((resolve) => {
     if (!apiKey) {
-      console.warn('[Brevo Serverless] BREVO_API_KEY non définie.');
+      console.warn('[Brevo Serverless] BREVO_API_KEY non définie. Mode simulation actif.');
       return resolve({
-        success: false,
+        success: true,
         simulated: true,
-        error: 'Clé BREVO_API_KEY non configurée dans Vercel.'
+        message: 'Notification simulée avec succès (ajouter BREVO_API_KEY sur Vercel).'
       });
     }
 
@@ -199,16 +230,53 @@ function sendBrevoEmail({ apiKey, senderEmail, senderName, toEmail, toName, subj
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // En-têtes de sécurité
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // Restriction CORS : Autoriser uniquement les domaines de l'application
+  const origin = req.headers.origin || '';
+  const isAllowedOrigin = !origin || 
+    origin.includes('vip-connect') || 
+    origin.includes('localhost') || 
+    origin.includes('127.0.0.1') ||
+    origin.endsWith('.vercel.app');
+
+  if (isAllowedOrigin && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    return res.status(403).json({ success: false, error: 'Origine non autorisée.' });
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-VIP-App-Token, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Méthode non autorisée' });
+    return res.status(405).json({ success: false, error: 'Méthode non autorisée. Seul POST est accepté.' });
+  }
+
+  // 1. Validation du jeton de sécurité applicatif (Bloque les appels externes non autorisés)
+  const clientToken = req.headers['x-vip-app-token'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+  if (!clientToken || clientToken !== APP_SECURITY_TOKEN) {
+    return res.status(401).json({
+      success: false,
+      error: 'Accès non autorisé : Jeton d\'application VIP Connect invalide ou manquant.'
+    });
+  }
+
+  // 2. Vérification du limiteur de débit anti-abus
+  const clientIp = (req.headers && req.headers['x-forwarded-for']) || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    return res.status(429).json({
+      success: false,
+      error: 'Limite de requêtes atteinte. Veuillez patienter une minute avant de réexpédier.'
+    });
   }
 
   try {
@@ -227,20 +295,25 @@ module.exports = async function handler(req, res) {
     }
     data = data || {};
 
-    const toEmail = (data.toEmail || data.email || '').trim();
-    const passengerName = `${data.firstname || ''} ${data.lastname || ''}`.trim() || data.passengerName || 'Client VIP';
-
-    if (!toEmail || !toEmail.includes('@')) {
+    const toEmail = (data.toEmail || data.email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!toEmail || !emailRegex.test(toEmail) || toEmail.length > 120) {
       return res.status(400).json({ success: false, error: 'Adresse email destinataire invalide' });
     }
 
-    const subject = `🎫 Votre Billet Officiel VIP Connect (${data.route || 'Douala ↔ Yaoundé'}) - Réf: ${data.resId || 'RES'}`;
+    const passengerName = String(`${data.firstname || ''} ${data.lastname || ''}`.trim() || data.passengerName || 'Client VIP').substring(0, 80);
+    const resId = String(data.resId || 'RES-00000').substring(0, 40);
+    const route = String(data.route || 'Douala ↔ Yaoundé').substring(0, 80);
+    const date = String(data.date || '').substring(0, 30);
+    const time = String(data.time || '').substring(0, 20);
+
+    const subject = `🎫 Votre Billet Officiel VIP Connect (${route}) - Réf: ${resId}`;
     const htmlContent = buildTicketEmailHtml({
-      resId: data.resId,
-      passengerName: passengerName,
-      route: data.route,
-      date: data.date,
-      time: data.time,
+      resId,
+      passengerName,
+      route,
+      date,
+      time,
       seatLabel: data.seatLabel,
       seatId: data.seatId,
       vehicleId: data.vehicleId,
@@ -250,9 +323,9 @@ module.exports = async function handler(req, res) {
     });
 
     const attachments = [];
-    if (data.pdfBase64) {
+    if (data.pdfBase64 && typeof data.pdfBase64 === 'string' && data.pdfBase64.length < 15 * 1024 * 1024) {
       attachments.push({
-        name: `Billet_VIP_Connect_${(data.resId || 'RESERVATION').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`,
+        name: `Billet_VIP_Connect_${resId.replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`,
         content: data.pdfBase64
       });
     }
@@ -279,6 +352,6 @@ module.exports = async function handler(req, res) {
       ...result
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Erreur interne lors du traitement de l\'email.' });
   }
 };

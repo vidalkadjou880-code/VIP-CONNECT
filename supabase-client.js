@@ -91,10 +91,12 @@ const vipSupabase = {
     },
 
     saveUser: async function(user) {
-        if (!this.client || !user || !user.phone) return;
+        if (!this.client || !user || !user.phone) return { success: false, error: "Utilisateur ou téléphone manquant" };
         // Ne jamais sauvegarder de faux comptes de test
         const cleanPhone = String(user.phone || '').replace(/[^0-9]/g, '');
-        if (['671234567', '694567890', '650112233', '699445566'].includes(cleanPhone)) return;
+        if (['671234567', '694567890', '650112233', '699445566'].includes(cleanPhone)) {
+            return { success: false, error: "Numéro de test ignoré" };
+        }
 
         try {
             const payload = {
@@ -107,10 +109,16 @@ const vipSupabase = {
                 kyc: user.kyc || { status: 'none' },
                 updated_at: new Date().toISOString()
             };
-            const { error } = await this.client.from('vip_users').upsert(payload, { onConflict: 'phone' });
-            if (error) console.warn('Erreur saveUser Supabase:', error.message);
+            const { data, error } = await this.client.from('vip_users').upsert(payload, { onConflict: 'phone' });
+            if (error) {
+                console.warn('Erreur saveUser Supabase:', error.message);
+                return { success: false, error: error.message };
+            }
+            console.log(`[Supabase] ✅ Utilisateur ${user.phone} (${user.firstname} ${user.lastname}) enregistré avec succès.`);
+            return { success: true, data };
         } catch (err) {
             console.warn('Exception saveUser Supabase:', err.message);
+            return { success: false, error: err.message };
         }
     },
 
@@ -315,16 +323,17 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // SUPABASE AUTH (Envoi d'email avec code OTP à 6 chiffres)
     // -------------------------------------------------------------
-    sendAuthOtp: async function(email) {
+    sendAuthOtp: async function(email, metadata = {}) {
         if (!this.client || !email) return { success: false, error: "Email requis ou Supabase indisponible" };
         try {
-            const currentOrigin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'http://10.1.1.11:3000';
+            const currentOrigin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://vip-connect.vercel.app';
             const redirectUrl = `${currentOrigin}${window.location.pathname}`;
             const { data, error } = await this.client.auth.signInWithOtp({
                 email: email,
                 options: {
                     shouldCreateUser: true,
-                    emailRedirectTo: redirectUrl
+                    emailRedirectTo: redirectUrl,
+                    data: metadata
                 }
             });
             if (error) {

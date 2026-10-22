@@ -59,6 +59,7 @@
   - `/api/payment/...` : Passerelle de paiement sécurisée
   - `/api/notifications/send-ticket-email` : Envoi du billet PDF avec pièce jointe via Brevo
   - `/api/notifications/send-reminder-email` : Envoi des rappels de départ à moins de 2h / 1h via Brevo
+  - `/api/notifications/send-kyc-status-email` : Envoi de l'email de validation ou de rejet KYC (avec motif) via Brevo
   - `/api/notifications/status` & `/api/notifications/history` : Surveillance et audit des envois
 - `.env` & `.env.example` : Configuration centralisée des clés Supabase, Brevo et passerelle de paiement.
 
