@@ -1,7 +1,9 @@
 /* style.css - Design Système Premium pour l'application VIP */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+    --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --primary-gold: #FFD700;
     --primary-gold-hover: #FFEA00;
     --primary-gold-rgb: 255, 215, 0;
@@ -22,12 +24,20 @@
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-* {
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-main);
     -webkit-tap-highlight-color: transparent;
+}
+
+body, button, input, select, textarea, optgroup {
+    font-family: var(--font-main);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
 }
 
 body {
@@ -102,7 +112,7 @@ header {
 }
 
 .logo-text {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 28px;
     font-weight: 700;
     color: var(--text-white);
@@ -193,7 +203,7 @@ header {
 }
 
 .hero h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 48px;
     font-weight: 700;
     margin-bottom: 20px;
@@ -222,7 +232,7 @@ main {
 }
 
 .section-title {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 36px;
     text-align: center;
     margin-bottom: 12px;
@@ -785,7 +795,7 @@ main {
 }
 
 .vehicle-details h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 28px;
     color: var(--text-white);
     margin-bottom: 10px;
@@ -841,7 +851,7 @@ main {
 }
 
 .booking-panel h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 22px;
     margin-bottom: 20px;
     color: var(--text-white);
@@ -1190,7 +1200,7 @@ main {
 }
 
 .admin-title {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 30px;
     color: var(--text-white);
 }
@@ -1399,7 +1409,7 @@ footer {
 }
 
 .footer-logo {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 22px;
     color: var(--text-white);
     font-weight: 700;
@@ -1736,7 +1746,7 @@ footer {
 }
 
 .landing-intro-text h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 32px;
     color: var(--text-white);
     margin-bottom: 8px;
@@ -1852,7 +1862,7 @@ footer {
 }
 
 .landing-price-card .price-amount {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
@@ -1979,7 +1989,7 @@ footer {
 }
 
 .destination-info h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 24px;
     color: var(--text-white);
     margin-bottom: 8px;
@@ -2955,7 +2965,7 @@ footer {
 }
 
 .vip-dialog-title {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     font-size: 22px;
     font-weight: 700;
     color: #ffffff !important;
@@ -2965,7 +2975,7 @@ footer {
 }
 
 .vip-dialog-message {
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-main);
     font-size: 14.5px;
     color: #e2e8f0 !important;
     line-height: 1.6;
@@ -3185,7 +3195,7 @@ footer {
     font-size: 24px;
     font-weight: 700;
     margin: 0 0 12px 0;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
     letter-spacing: 0.5px;
 }
 
@@ -3273,7 +3283,7 @@ footer {
     font-size: 24px;
     font-weight: 700;
     margin: 0 0 12px 0;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-heading);
 }
 
 .kyc-approved-desc {

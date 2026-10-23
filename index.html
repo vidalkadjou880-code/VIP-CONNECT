@@ -7,6 +7,10 @@
     <title>VIP Connect - Transport Inter-urbain Douala ↔ Yaoundé</title>
     <meta name="description"
         content="Réservez votre trajet premium entre Douala et Yaoundé à bord de véhicules personnels haut de gamme climatisés.">
+    <!-- Police d'écriture standard : Inter + Système -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=20261017">
     <!-- Icones FontAwesome pour un rendu élégant -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -288,7 +292,7 @@
         <section id="sec-login" class="section-container hidden">
             <div class="container">
                 <div class="card-premium" style="max-width: 500px;">
-                    <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; text-align: center; margin-bottom: 20px; color: var(--text-white);"
+                    <h3 style="font-family: var(--font-heading); font-size: 24px; text-align: center; margin-bottom: 20px; color: var(--text-white);"
                         data-i18n="login.title">
                         Accéder à l'expérience VIP Connect</h3>
 
@@ -335,7 +339,7 @@
         <section id="sec-register" class="section-container hidden">
             <div class="container">
                 <div class="card-premium" style="max-width: 550px;">
-                    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
+                    <h2 style="font-family: var(--font-heading); font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
                         data-i18n="register.title">
                         Devenir Membre VIP Connect</h2>
                     <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px;"
@@ -415,7 +419,7 @@
                         <i class="fas fa-envelope-circle-check" style="font-size: 32px; color: var(--gold-light);"></i>
                     </div>
 
-                    <h2 style="font-family: 'Playfair Display', serif; font-size: 26px; color: var(--text-white); margin-bottom: 8px;">
+                    <h2 style="font-family: var(--font-heading); font-size: 26px; color: var(--text-white); margin-bottom: 8px;">
                         Code de Sécurité
                     </h2>
                     <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">
@@ -464,7 +468,7 @@
         <section id="sec-forgot-password" class="section-container hidden">
             <div class="container">
                 <div class="card-premium" style="max-width: 500px;">
-                    <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
+                    <h2 style="font-family: var(--font-heading); font-size: 28px; text-align: center; margin-bottom: 8px; color: var(--text-white);"
                         data-i18n="forgot.title">
                         Réinitialisation</h2>
                     <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px;"
@@ -534,7 +538,7 @@
                     <div style="text-align: center; margin-bottom: 24px;">
                         <i class="fas fa-shield-halved"
                             style="font-size: 48px; color: var(--text-white); margin-bottom: 15px;"></i>
-                        <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; color: var(--text-white);"
+                        <h2 style="font-family: var(--font-heading); font-size: 28px; color: var(--text-white);"
                             data-i18n="kyc.title">
                             Vérification d'Identité</h2>
                         <p style="color: var(--text-muted); font-size: 14px; margin-top: 8px;" data-i18n="kyc.subtitle">
@@ -948,7 +952,7 @@
                 <div class="user-reservations-panel" style="margin-top: 40px; background: rgba(18, 19, 26, 0.7); border: 1px solid rgba(197, 168, 128, 0.25); border-radius: 16px; padding: 25px 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(197, 168, 128, 0.15); padding-bottom: 15px;">
                         <div>
-                            <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-white); margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <h3 style="font-family: var(--font-heading); font-size: 22px; color: var(--text-white); margin: 0; display: flex; align-items: center; gap: 10px;">
                                 <i class="fas fa-ticket-alt" style="color: var(--primary-gold);"></i>
                                 <span>Mes Réservations & Billets</span>
                             </h3>
@@ -971,7 +975,7 @@
         <!-- PAGE AVIS CLIENTS -->
         <section id="sec-reviews" class="section-container hidden">
             <div class="container" style="max-width: 800px; margin: 40px auto;">
-                <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; text-align: center; margin-bottom: 30px; color: var(--text-white);"
+                <h2 style="font-family: var(--font-heading); font-size: 28px; text-align: center; margin-bottom: 30px; color: var(--text-white);"
                     data-i18n="reviews.title">Expériences de nos Voyageurs</h2>
 
                 <div class="card-premium" style="margin-bottom: 40px; padding: 25px;">
@@ -1283,7 +1287,7 @@
     <div id="modal-payment" class="payment-modal hidden">
         <div class="payment-container">
             <button class="payment-close" onclick="app.closePaymentModal()">&times;</button>
-            <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; text-align: center; margin-bottom: 10px; color: var(--text-white);"
+            <h3 style="font-family: var(--font-heading); font-size: 24px; text-align: center; margin-bottom: 10px; color: var(--text-white);"
                 data-i18n="payment_modal.title">
                 Paiement Sécurisé</h3>
             <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 24px;"
@@ -1358,7 +1362,7 @@
         <div class="kyc-lightbox-container">
             <div
                 style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
-                <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-white);"><i
+                <h3 style="font-family: var(--font-heading); font-size: 24px; color: var(--text-white);"><i
                         class="fas fa-user-shield" style="color: var(--text-white); margin-right: 10px;"></i><span
                         data-i18n="admin.lightbox_title">Examen
                         des Pièces Justificatives</span></h3>
@@ -1440,7 +1444,7 @@
                         VK
                     </div>
                     <div>
-                        <h3 id="user-detail-fullname" style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-white); margin: 0;">Vidal Kadjou</h3>
+                        <h3 id="user-detail-fullname" style="font-family: var(--font-heading); font-size: 22px; color: var(--text-white); margin: 0;">Vidal Kadjou</h3>
                         <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
                             <span id="user-detail-role-badge" class="badge" style="font-size: 11px;">Administrateur</span>
                             <span id="user-detail-kyc-badge" class="badge badge-approved" style="font-size: 11px;">KYC Validé ✓</span>
@@ -1529,7 +1533,7 @@
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 24px; color: #9e7d47;">★</span>
-                            <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #111118; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">VIP CONNECT</h2>
+                            <h2 style="font-family: var(--font-heading); color: #111118; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">VIP CONNECT</h2>
                         </div>
                         <span style="display: block; font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">Transport Privé Inter-urbain Douala ↔ Yaoundé</span>
                         <span style="display: inline-block; font-size: 10px; color: #9e7d47; background: rgba(197, 168, 128, 0.15); padding: 2px 8px; border-radius: 4px; margin-top: 5px; font-weight: 700; text-transform: uppercase;">Service Première Classe • Flotte Toyota</span>

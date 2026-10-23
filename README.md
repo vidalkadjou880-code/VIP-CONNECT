@@ -53,5 +53,5 @@ L'application a été développée comme une **Single Page Application (SPA) aut
   - Projet ID : `ngecktssfnpzcpsjvhhc`
   - URL Supabase : `https://ngecktssfnpzcpsjvhhc.supabase.co`
   - Tables synchronisées : `vip_users`, `vip_reservations`, `vip_payments`, `vip_reviews`
-* **Typographie & Iconographie** : Montserrat, Playfair Display (Google Fonts) & FontAwesome.
+* **Typographie & Iconographie** : Inter / Polices Système standard & FontAwesome.
 
