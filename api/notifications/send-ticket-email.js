@@ -108,7 +108,7 @@ function buildTicketEmailHtml(data) {
                   </td>
                   <td style="padding: 12px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); text-align: right;">
                     <span style="font-size: 11px; color: #a0aec0; display: block;">Véhicule VIP :</span>
-                    <strong style="font-size: 14px; color: #ffffff;">Toyota Privée #${data.vehicleId || 1}</strong>
+                    <strong style="font-size: 14px; color: #ffffff;">Changan Privée #${data.vehicleId || 1}</strong>
                   </td>
                 </tr>
                 <tr>
