@@ -1,0 +1,24 @@
+name: Keep Supabase Project Active
+
+on:
+  schedule:
+    # S'exécute automatiquement tous les 3 jours à 08h00 UTC pour empêcher la mise en pause (limite de 7 jours sur le plan gratuit)
+    - cron: '0 8 */3 * *'
+  workflow_dispatch: # Permet aussi de le lancer manuellement en 1 clic depuis l'onglet Actions de GitHub
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database REST API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://ngecktssfnpzcpsjvhhc.supabase.co/rest/v1/vip_users?select=phone&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nZWNrdHNzZm5wemNwc2p2aGhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNDEyNDEsImV4cCI6MjA5NzYxNzI0MX0.3zAkWkVZXbuxyHRTc0Vk8sXNB9DtS_XdOSH37XftM5k")
+          echo "Réponse Supabase HTTP : $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✅ Projet Supabase actif !"
+          else
+            echo "⚠️ Le projet semble encore en pause ou indisponible (code $STATUS)."
+            exit 1
+          fi
