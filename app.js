@@ -949,7 +949,8 @@ const app = {
                     this.showModalAlert(
                         `Félicitations ${user.firstname} !\n\nVotre adresse email (${email}) a été certifiée avec succès.\nVous êtes maintenant connecté à votre compte VIP Connect.`,
                         "Email Certifié & Connexion Réussie",
-                        "success"
+                        "success",
+                        () => this.promptNotificationPermissionOnAuth()
                     );
 
                     this.promoteIfAdmin(user);
@@ -1257,7 +1258,12 @@ const app = {
             this.saveUsers();
             this.updateHeaderMenu();
             this.state.pending2FA = null;
-            this.showModalAlert(`Bienvenue ${user.firstname} ! Vous êtes connecté à VIP Connect.`, "Connexion Réussie", "success");
+            this.showModalAlert(
+                `Bienvenue ${user.firstname} ! Vous êtes connecté à VIP Connect.`,
+                "Connexion Réussie",
+                "success",
+                () => this.promptNotificationPermissionOnAuth()
+            );
             if (this.isAdminUser(user)) {
                 this.showSection('admin');
             } else {
@@ -1283,7 +1289,12 @@ const app = {
             this.state.currentUser = user;
             this.updateHeaderMenu();
             this.state.pending2FA = null;
-            this.showModalAlert("Votre compte a été certifié et créé avec succès ! Bienvenue chez VIP Connect.", "Compte Activé", "success");
+            this.showModalAlert(
+                "Votre compte a été certifié et créé avec succès ! Bienvenue chez VIP Connect.",
+                "Compte Activé",
+                "success",
+                () => this.promptNotificationPermissionOnAuth()
+            );
             if (this.isAdminUser(user)) {
                 this.showSection('admin');
             } else {
@@ -1993,6 +2004,7 @@ const app = {
             returnDateGroup.classList.add('hidden');
             returnDateInput.required = false;
             returnDateInput.value = '';
+            
             if(returnTimeInput) {
                 returnTimeInput.required = false;
                 returnTimeInput.value = '';
@@ -3636,49 +3648,94 @@ const app = {
     },
 
     updateNotificationUi: function() {
-        const isSupported = 'Notification' in window;
-        const permission = isSupported ? Notification.permission : 'unsupported';
-        const isGranted = permission === 'granted';
+        // Les boutons de notification dans l'entête et la bannière du tableau de bord ont été retirés
+        // au profit de la demande d'autorisation lors de la connexion ou création du compte.
+    },
 
-        // Badge cloche dans l'entête
-        const headerBtn = document.getElementById('btn-header-notif');
-        const headerDot = document.getElementById('header-notif-dot');
-        if (headerBtn) {
-            if (isGranted) {
-                headerBtn.classList.add('active');
-                if (headerDot) headerDot.classList.remove('hidden');
-            } else {
-                headerBtn.classList.remove('active');
-                if (headerDot) headerDot.classList.add('hidden');
-            }
+    promptNotificationPermissionOnAuth: function() {
+        const userKey = this.state.currentUser ? (this.state.currentUser.phone || this.state.currentUser.email || 'default') : 'default';
+        const savedPref = localStorage.getItem('vip_notif_pref_' + userKey);
+        const sessionPref = sessionStorage.getItem('vip_notif_session_' + userKey);
+
+        // Si l'utilisateur a déjà choisi "Toujours", "Lorsque connecté" ou a déjà répondu pour cette session
+        if (savedPref === 'always' || savedPref === 'while_using' || sessionPref) {
+            return;
         }
 
-        // Bannière dans le dashboard
-        const banner = document.getElementById('phone-notif-card');
-        const statusPill = document.getElementById('phone-notif-status-pill');
-        const reqBtn = document.getElementById('btn-request-phone-notif');
-        const testBtn = document.getElementById('btn-test-phone-notif');
-        const descEl = document.getElementById('phone-notif-desc');
+        const modal = document.getElementById('vip-notif-permission-modal');
+        if (!modal) return;
 
-        if (banner) {
-            if (isGranted) {
-                banner.classList.add('active');
-                if (statusPill) statusPill.classList.remove('hidden');
-                if (reqBtn) reqBtn.classList.add('hidden');
-                if (testBtn) testBtn.classList.remove('hidden');
-                if (descEl) descEl.innerText = this.state.lang === 'fr'
-                    ? "Notifications actives sur cet appareil. Vos billets et alertes de départ à moins de 2h s'afficheront sur votre écran."
-                    : "Notifications active on this device. Your tickets and departure reminders (under 2h) will appear on your screen.";
-            } else {
-                banner.classList.remove('active');
-                if (statusPill) statusPill.classList.add('hidden');
-                if (reqBtn) reqBtn.classList.remove('hidden');
-                if (testBtn) testBtn.classList.add('hidden');
-                if (descEl) descEl.innerText = this.state.lang === 'fr'
-                    ? "Recevez votre billet officiel et vos alertes de départ à moins de 2h directement sur l'écran de votre smartphone."
-                    : "Receive your official ticket and travel departure reminders under 2 hours directly on your phone screen.";
+        const isFr = this.state.lang === 'fr';
+        const titleEl = document.getElementById('notif-perm-title');
+        const descEl = document.getElementById('notif-perm-desc');
+        const optAlways = document.getElementById('notif-opt-always');
+        const optWhile = document.getElementById('notif-opt-while');
+        const optOnce = document.getElementById('notif-opt-once');
+        const optDeny = document.getElementById('notif-opt-deny');
+
+        if (titleEl) {
+            titleEl.innerText = isFr
+                ? "Autoriser VIP Connect à vous envoyer des notifications ?"
+                : "Allow VIP Connect to send you notifications?";
+        }
+        if (descEl) {
+            descEl.innerText = isFr
+                ? "Recevez votre billet officiel, la validation de votre compte et vos alertes de départ sur votre appareil et par email."
+                : "Receive your official ticket, account approval and departure alerts on your device and by email.";
+        }
+        if (optAlways) optAlways.innerText = isFr ? "Toujours autoriser" : "Always allow";
+        if (optWhile) optWhile.innerText = isFr ? "Uniquement lorsque je suis connecté à l'application" : "Only while logged into the app";
+        if (optOnce) optOnce.innerText = isFr ? "Une seule fois (cette session)" : "Only this time (this session)";
+        if (optDeny) optDeny.innerText = isFr ? "Ne pas autoriser" : "Don't allow";
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    },
+
+    handleNotifPermissionChoice: async function(choice) {
+        const modal = document.getElementById('vip-notif-permission-modal');
+        if (modal) modal.classList.add('hidden');
+        document.body.style.overflow = '';
+
+        const userKey = this.state.currentUser ? (this.state.currentUser.phone || this.state.currentUser.email || 'default') : 'default';
+
+        if (choice === 'always') {
+            localStorage.setItem('vip_notif_pref_' + userKey, 'always');
+            sessionStorage.setItem('vip_notif_session_' + userKey, 'allowed');
+        } else if (choice === 'while_using') {
+            localStorage.setItem('vip_notif_pref_' + userKey, 'while_using');
+            sessionStorage.setItem('vip_notif_session_' + userKey, 'allowed');
+        } else if (choice === 'once') {
+            localStorage.removeItem('vip_notif_pref_' + userKey);
+            sessionStorage.setItem('vip_notif_session_' + userKey, 'allowed');
+        } else {
+            localStorage.setItem('vip_notif_pref_' + userKey, 'deny');
+            sessionStorage.setItem('vip_notif_session_' + userKey, 'denied');
+            return;
+        }
+
+        if ('Notification' in window) {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    await this.showPhoneNotification("🔔 VIP Connect - Notifications Activées", {
+                        body: "Vous recevrez vos billets et vos rappels de départ directement sur cet appareil.",
+                        tag: 'welcome-notif'
+                    });
+                }
+            } catch (err) {
+                console.warn('Notification permission notice:', err);
             }
         }
+    },
+
+    isUserNotifAllowed: function() {
+        const userKey = this.state.currentUser ? (this.state.currentUser.phone || this.state.currentUser.email || 'default') : 'default';
+        const savedPref = localStorage.getItem('vip_notif_pref_' + userKey);
+        const sessionPref = sessionStorage.getItem('vip_notif_session_' + userKey);
+        if (savedPref === 'deny' && sessionPref !== 'allowed') return false;
+        if (savedPref === 'while_using' && !this.state.currentUser) return false;
+        return true;
     },
 
     togglePhoneNotifications: function() {
@@ -3735,7 +3792,7 @@ const app = {
     },
 
     showPhoneNotification: async function(title, options = {}) {
-        if (!('Notification' in window) || Notification.permission !== 'granted') {
+        if (!('Notification' in window) || Notification.permission !== 'granted' || !this.isUserNotifAllowed()) {
             return false;
         }
 

@@ -33,12 +33,6 @@
             </a>
 
             <div class="header-right">
-                <!-- Bouton Notifications Smartphone -->
-                <button class="header-notif-btn" id="btn-header-notif" onclick="app.togglePhoneNotifications()" title="Notifications sur téléphone">
-                    <i class="fas fa-bell"></i>
-                    <span id="header-notif-dot" class="notif-dot hidden"></span>
-                </button>
-
                 <!-- Sélecteur de langue -->
                 <div class="lang-selector">
                     <button class="lang-btn active" id="lang-fr" onclick="app.changeLanguage('fr')">FR</button>
@@ -768,32 +762,6 @@
                     <button class="btn-gold" style="width: auto; padding: 10px 20px; font-size: 14px; color: #111;"
                         onclick="app.showSection('kyc-verification')"
                         data-i18n="dashboard.kyc_banner_btn">S'identifier</button>
-                </div>
-
-                <!-- Bannière Notifications Téléphone (Billet & Rappels de Départ) -->
-                <div id="phone-notif-card" class="phone-notif-banner">
-                    <div class="phone-notif-info">
-                        <div class="phone-notif-icon">
-                            <i class="fas fa-bell"></i>
-                        </div>
-                        <div class="phone-notif-text">
-                            <h4 id="phone-notif-title">
-                                <span data-i18n="notifications.phone_title">Notifications sur votre Téléphone</span>
-                                <span id="phone-notif-status-pill" class="badge badge-approved hidden" style="font-size: 11px; margin-left: 6px;">Actives ✓</span>
-                            </h4>
-                            <p id="phone-notif-desc" data-i18n="notifications.phone_desc">
-                                Recevez votre billet officiel et vos alertes de départ à moins de 2h directement sur l'écran de votre smartphone.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="phone-notif-actions">
-                        <button id="btn-request-phone-notif" class="btn-gold" style="width: auto; padding: 9px 18px; font-size: 13px; font-weight: 700;" onclick="app.requestPhoneNotifications()">
-                            <i class="fas fa-mobile-screen" style="margin-right: 6px;"></i> <span data-i18n="notifications.btn_enable">Activer sur mon Téléphone</span>
-                        </button>
-                        <button id="btn-test-phone-notif" class="btn-outline hidden" style="width: auto; padding: 8px 16px; font-size: 12px;" onclick="app.testPhoneNotification()">
-                            <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> <span data-i18n="notifications.btn_test">Tester notification</span>
-                        </button>
-                    </div>
                 </div>
 
                 <div class="dashboard-layout">
@@ -1693,6 +1661,33 @@
         </div>
     </div>
 
+    <!-- MODALE D'AUTORISATION DE NOTIFICATIONS (À LA CONNEXION / CRÉATION DE COMPTE) -->
+    <div id="vip-notif-permission-modal" class="vip-dialog-overlay hidden">
+        <div class="vip-dialog-card" style="max-width: 440px;">
+            <div class="vip-dialog-icon icon-info" style="background: rgba(197, 168, 128, 0.15); border-color: #c5a880; color: #c5a880;">
+                <i class="fas fa-bell"></i>
+            </div>
+            <h3 class="vip-dialog-title" id="notif-perm-title">Autoriser VIP Connect à vous envoyer des notifications ?</h3>
+            <p class="vip-dialog-message" id="notif-perm-desc" style="margin-bottom: 18px;">
+                Recevez votre billet officiel, la validation de votre identité et vos rappels de départ (2h et 1h avant) sur votre appareil et par email.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <button type="button" class="btn-gold" style="width: 100%; padding: 12px 16px; font-weight: 700;" onclick="app.handleNotifPermissionChoice('always')">
+                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i> <span id="notif-opt-always">Toujours autoriser</span>
+                </button>
+                <button type="button" class="btn-outline" style="width: 100%; padding: 11px 16px; color: #fff; border-color: rgba(197, 168, 128, 0.5);" onclick="app.handleNotifPermissionChoice('while_using')">
+                    <i class="fas fa-mobile-screen" style="margin-right: 8px;"></i> <span id="notif-opt-while">Uniquement lorsque je suis connecté à l'application</span>
+                </button>
+                <button type="button" class="btn-outline" style="width: 100%; padding: 11px 16px; color: #fff; border-color: rgba(255, 255, 255, 0.25);" onclick="app.handleNotifPermissionChoice('once')">
+                    <i class="fas fa-clock" style="margin-right: 8px;"></i> <span id="notif-opt-once">Une seule fois (cette session)</span>
+                </button>
+                <button type="button" class="btn-outline" style="width: 100%; padding: 10px 16px; color: #a0aec0; border-color: transparent; font-size: 13px;" onclick="app.handleNotifPermissionChoice('deny')">
+                    <span id="notif-opt-deny">Ne pas autoriser</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- BARRE DE NAVIGATION INFÉRIEURE MOBILE (APP STYLE SMARTPHONE) -->
     <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Navigation principale mobile">
         <!-- Rempli dynamiquement par app.updateMobileBottomBar() -->
@@ -1727,7 +1722,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js"></script>
+    <script src="app.js?v=20261117"></script>
 </body>
 
 </html>
