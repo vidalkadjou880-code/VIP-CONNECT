@@ -4,7 +4,7 @@
  * et les rappels de départ.
  */
 
-const CACHE_NAME = 'vip-connect-v4';
+const CACHE_NAME = 'vip-connect-v5';
 const CORE_ASSETS = [
     '/',
     '/index.html',

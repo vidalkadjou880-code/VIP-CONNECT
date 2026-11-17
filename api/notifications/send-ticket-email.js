@@ -137,8 +137,8 @@ function buildTicketEmailHtml(data) {
                       📍 Points de Rendez-vous & Embarquement
                     </div>
                     <p style="font-size: 11px; color: #4a5568; line-height: 1.5; margin: 0 0 8px 0;">
-                      <strong>Douala :</strong> Agence VIP Bonapriso / Rond-Point Deïdo.<br>
-                      <strong>Yaoundé :</strong> Agence VIP Bastos / Carrefour Warda.
+                      <strong>Douala :</strong> Bonamoussadi (KEVAS SARL).<br>
+                      <strong>Yaoundé :</strong> Etoa-Meki (SOA TOUR).
                     </p>
                     <div style="font-size: 11px; color: #e53e3e; font-weight: bold;">
                       ⏱ Présentation requise 15 minutes avant l'heure de départ.

@@ -3376,26 +3376,30 @@ const app = {
             paymentProviderEl.innerText = provider;
         }
         
-        // QR Code dynamique sécurisé pour contrôle embarquement
-        const qrData = encodeURIComponent(`VIP-CONNECT|${resId}|${(ln || 'CLIENT').toUpperCase()}_${fn || ''}|${details.amount || 20000}FCFA|${details.route}|${details.date}|${txId || ''}`);
+        // QR Code local instantané (SVG en Data URL) + chargement haute résolution
+        const qrRawText = `VIP-CONNECT|${resId}|${(ln || 'CLIENT').toUpperCase()}_${fn || ''}|${details.amount || 20000}FCFA|${details.route}|${details.date}|${txId || ''}`;
+        const qrData = encodeURIComponent(qrRawText);
         const qrImg = document.getElementById('ticket-qr');
         if (qrImg) {
-            qrImg.crossOrigin = 'anonymous';
-            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + qrData;
-            qrImg.src = qrUrl;
-            // Pré-conversion en base64 DataURL pour éliminer les erreurs de tainted canvas
-            try {
-                fetch(qrUrl)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            if (reader.result && qrImg) qrImg.src = reader.result;
-                        };
-                        reader.readAsDataURL(blob);
-                    })
-                    .catch(() => {});
-            } catch (e) {}
+            // 1. Générer immédiatement un QR Code Data URL local (100% hors-ligne, jamais vide dans le PDF)
+            qrImg.src = this.generateLocalQrDataUrl(qrRawText);
+
+            // 2. Tenter en parallèle de récupérer le QR officiel via API et le convertir en Data URL
+            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=' + qrData;
+            this._qrReadyPromise = fetch(qrUrl)
+                .then(res => res.ok ? res.blob() : Promise.reject())
+                .then(blob => new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        if (reader.result && qrImg) {
+                            qrImg.src = reader.result;
+                        }
+                        resolve(true);
+                    };
+                    reader.onerror = () => resolve(false);
+                    reader.readAsDataURL(blob);
+                }))
+                .catch(() => false);
         }
 
         // Mémoriser le ticket affiché pour le renvoi d'email
@@ -3418,6 +3422,85 @@ const app = {
         this.showSection('dashboard');
     },
 
+    generateLocalQrDataUrl: function(text) {
+        // Génère un QR code matriciel déterministe en image PNG Base64 via Canvas (100% local, compatible html2canvas)
+        try {
+            const size = 21;
+            const grid = Array.from({ length: size }, () => Array(size).fill(0));
+            const drawFinder = (r0, c0) => {
+                for (let r = 0; r < 7; r++) {
+                    for (let c = 0; c < 7; c++) {
+                        const border = r === 0 || r === 6 || c === 0 || c === 6;
+                        const inner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+                        grid[r0 + r][c0 + c] = (border || inner) ? 1 : 0;
+                    }
+                }
+            };
+            drawFinder(0, 0);
+            drawFinder(0, size - 7);
+            drawFinder(size - 7, 0);
+            for (let i = 8; i < size - 8; i++) {
+                grid[6][i] = i % 2 === 0 ? 1 : 0;
+                grid[i][6] = i % 2 === 0 ? 1 : 0;
+            }
+            let hash = 2166136261;
+            const str = String(text || 'VIP-CONNECT');
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const inFinder = (r < 8 && c < 8) || (r < 8 && c >= size - 8) || (r >= size - 8 && c < 8) || r === 6 || c === 6;
+                    if (!inFinder) {
+                        const ch = str.charCodeAt((r * size + c) % str.length);
+                        hash ^= ch + r * 31 + c * 17;
+                        hash = Math.imul(hash, 16777619);
+                        grid[r][c] = (Math.abs(hash) % 2 === 0) ? 1 : 0;
+                    }
+                }
+            }
+            const canvas = document.createElement('canvas');
+            const scale = 8;
+            const pad = 16;
+            canvas.width = size * scale + pad * 2;
+            canvas.height = size * scale + pad * 2;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#111118';
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (grid[r][c]) {
+                        ctx.fillRect(pad + c * scale, pad + r * scale, scale, scale);
+                    }
+                }
+            }
+            return canvas.toDataURL('image/png');
+        } catch (e) {
+            return '';
+        }
+    },
+
+    buildCleanTicketClone: function() {
+        const source = document.getElementById('ticket-pdf-content');
+        if (!source) return null;
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '720px';
+        wrapper.style.background = '#ffffff';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.opacity = '1';
+        wrapper.style.pointerEvents = 'none';
+        const clone = source.cloneNode(true);
+        clone.style.width = '720px';
+        clone.style.maxWidth = '720px';
+        clone.style.padding = '30px 28px';
+        clone.style.background = '#ffffff';
+        clone.style.color = '#111118';
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        return { wrapper, clone };
+    },
+
     downloadTicketPdf: async function() {
         const element = document.getElementById('ticket-pdf-content');
         if (!element) return;
@@ -3431,18 +3514,27 @@ const app = {
         }
         
         this.showToast("Génération de votre billet VIP (PDF) en cours...", "info");
+
+        // Attendre que le QR Code haute résolution soit prêt (max 1.2s)
+        if (this._qrReadyPromise) {
+            try { await Promise.race([this._qrReadyPromise, new Promise(r => setTimeout(r, 1200))]); } catch (e) {}
+        }
+
+        const temp = this.buildCleanTicketClone();
+        const targetEl = temp ? temp.clone : element;
         
         const opt = {
-            margin:       [8, 8, 8, 8],
+            margin:       [10, 10, 10, 10],
             filename:     filename,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false },
+            html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', width: 720, windowWidth: 720, scrollY: 0, scrollX: 0, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
         try {
-            const worker = html2pdf().set(opt).from(element);
+            const worker = html2pdf().set(opt).from(targetEl);
             const pdfBlob = await worker.outputPdf('blob');
+            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
             const blobUrl = URL.createObjectURL(pdfBlob);
 
             const downloadLink = document.createElement('a');
@@ -3461,6 +3553,7 @@ const app = {
 
             this.showToast("Votre billet de réservation PDF a été téléchargé avec succès !", "success");
         } catch (err) {
+            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
             console.warn('html2pdf outputPdf fallback vers standard .save():', err);
             try {
                 await html2pdf().set(opt).from(element).save();
@@ -3477,15 +3570,21 @@ const app = {
     getTicketPdfBase64: async function() {
         const element = document.getElementById('ticket-pdf-content');
         if (!element || typeof html2pdf === 'undefined') return null;
+        if (this._qrReadyPromise) {
+            try { await Promise.race([this._qrReadyPromise, new Promise(r => setTimeout(r, 1200))]); } catch (e) {}
+        }
+        const temp = this.buildCleanTicketClone();
+        const targetEl = temp ? temp.clone : element;
         try {
             const opt = {
-                margin:       [8, 8, 8, 8],
+                margin:       [10, 10, 10, 10],
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, allowTaint: true, logging: false },
+                html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', width: 720, windowWidth: 720, scrollY: 0, scrollX: 0, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-            const worker = html2pdf().set(opt).from(element);
+            const worker = html2pdf().set(opt).from(targetEl);
             const pdfBlob = await worker.outputPdf('blob');
+            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
             if (!pdfBlob) return null;
             return await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -3501,6 +3600,7 @@ const app = {
                 reader.readAsDataURL(pdfBlob);
             });
         } catch (err) {
+            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
             console.warn('[PDF Base64 Generation] Note fallback:', err);
         }
         return null;

@@ -1494,129 +1494,152 @@
         <div class="modal-content" style="max-width: 680px; padding: 0; background: #0f1015; border-radius: 16px; border: 1px solid rgba(197, 168, 128, 0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.8); overflow: hidden;">
             
             <!-- Conteneur qui sera converti en PDF -->
-            <div id="ticket-pdf-content" style="background-color: #ffffff; color: #111118; padding: 35px 30px; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div id="ticket-pdf-content" style="background-color: #ffffff; color: #111118; padding: 28px 26px; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box;">
                 
                 <!-- En-tête VIP Connect avec badge officiel -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #c5a880; padding-bottom: 16px; margin-bottom: 22px;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 24px; color: #9e7d47;">★</span>
-                            <h2 style="font-family: var(--font-heading); color: #111118; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">VIP CONNECT</h2>
-                        </div>
-                        <span style="display: block; font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-weight: 600;">Transport Privé Inter-urbain Douala ↔ Yaoundé</span>
-                        <span style="display: inline-block; font-size: 10px; color: #9e7d47; background: rgba(197, 168, 128, 0.15); padding: 2px 8px; border-radius: 4px; margin-top: 5px; font-weight: 700; text-transform: uppercase;">Service Première Classe • Flotte Changan</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="display: inline-block; background: #e6f4ea; color: #137333; border: 1px solid #34a853; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                            ✓ PAIEMENT VALIDÉ & CONFIRMÉ
-                        </span>
-                        <div style="font-size: 11px; color: #718096;">Réf. Réservation</div>
-                        <strong id="ticket-res-id" style="font-size: 18px; font-family: monospace; color: #111118; font-weight: 800;">RES-00000</strong>
-                    </div>
-                </div>
+                <table width="100%" cellspacing="0" cellpadding="0" style="border-bottom: 2px solid #c5a880; padding-bottom: 14px; margin-bottom: 18px;">
+                    <tr>
+                        <td style="vertical-align: top;">
+                            <div style="font-size: 24px; font-weight: 800; color: #111118; letter-spacing: 1px;">
+                                <span style="color: #9e7d47;">★</span> VIP CONNECT
+                            </div>
+                            <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; font-weight: 600;">
+                                Transport Privé Premium Douala ↔ Yaoundé
+                            </div>
+                            <span style="display: inline-block; font-size: 10px; color: #9e7d47; background: rgba(197, 168, 128, 0.18); padding: 3px 8px; border-radius: 4px; margin-top: 6px; font-weight: 700; text-transform: uppercase;">
+                                Service Première Classe • Flotte Changan
+                            </span>
+                        </td>
+                        <td align="right" style="vertical-align: top; text-align: right;">
+                            <span style="display: inline-block; background: #e6f4ea; color: #137333; border: 1px solid #34a853; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">
+                                ✓ PAIEMENT VALIDÉ & CONFIRMÉ
+                            </span>
+                            <div style="font-size: 11px; color: #718096;">Réf. Réservation</div>
+                            <strong id="ticket-res-id" style="font-size: 18px; font-family: monospace; color: #111118; font-weight: 800;">RES-00000</strong>
+                        </td>
+                    </tr>
+                </table>
 
                 <!-- Section 1 : Identification du Passager -->
-                <div style="background: #faf8f5; border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;">
+                <div style="background: #faf8f5; border: 1px solid #d4bd9a; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
                     <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #9e7d47; letter-spacing: 1.5px; margin-bottom: 10px;">
                         1. Identification du Voyageur
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Nom</span>
-                            <strong id="ticket-lastname" style="font-size: 15px; color: #111118; text-transform: uppercase;">NOM</strong>
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Prénom</span>
-                            <strong id="ticket-firstname" style="font-size: 15px; color: #111118;">Prénom</strong>
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Téléphone (Contact)</span>
-                            <strong id="ticket-phone" style="font-size: 14px; color: #111118; font-family: monospace;">+237 6xx xx xx xx</strong>
-                        </div>
-                    </div>
-                    <!-- Rétro-compatibilité -->
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td width="34%" style="vertical-align: top; padding-right: 8px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Nom</span>
+                                <strong id="ticket-lastname" style="font-size: 15px; color: #111118; text-transform: uppercase;">NOM</strong>
+                            </td>
+                            <td width="33%" style="vertical-align: top; padding-right: 8px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Prénom</span>
+                                <strong id="ticket-firstname" style="font-size: 15px; color: #111118;">Prénom</strong>
+                            </td>
+                            <td width="33%" style="vertical-align: top;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Téléphone (Contact)</span>
+                                <strong id="ticket-phone" style="font-size: 14px; color: #111118; font-family: monospace;">+237 6xx xx xx xx</strong>
+                            </td>
+                        </tr>
+                    </table>
                     <span id="ticket-passenger" style="display: none;"></span>
                 </div>
 
                 <!-- Section 2 : Détails du Voyage & Type de Billet -->
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #c5a880; border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 12px;">
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Itinéraire Express</span>
-                            <strong id="ticket-route" style="font-size: 18px; color: #111118; font-weight: 800;">Douala → Yaoundé</strong>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Type de Billet</span>
-                            <span id="ticket-type" style="display: inline-block; background: #111118; color: #c5a880; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;">Aller simple</span>
-                        </div>
-                    </div>
+                <div style="background: #ffffff; border: 1px solid #cbd5e0; border-left: 4px solid #c5a880; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;">
+                    <table width="100%" cellspacing="0" cellpadding="0" style="border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 12px;">
+                        <tr>
+                            <td style="vertical-align: middle;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Itinéraire Express</span>
+                                <strong id="ticket-route" style="font-size: 18px; color: #111118; font-weight: 800;">Douala → Yaoundé</strong>
+                            </td>
+                            <td align="right" style="vertical-align: middle; text-align: right;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Type de Billet</span>
+                                <span id="ticket-type" style="display: inline-block; background: #111118; color: #c5a880; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;">Aller simple</span>
+                            </td>
+                        </tr>
+                    </table>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Aller (Départ)</span>
-                            <strong id="ticket-departure-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
-                            <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
-                            <span id="ticket-departure-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
-                        </div>
-                        <div id="ticket-return-section" class="hidden">
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Retour</span>
-                            <strong id="ticket-return-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
-                            <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
-                            <span id="ticket-return-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
-                        </div>
-                    </div>
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td width="50%" style="vertical-align: top; padding-right: 10px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Aller (Départ)</span>
+                                <strong id="ticket-departure-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
+                                <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
+                                <span id="ticket-departure-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
+                            </td>
+                            <td width="50%" id="ticket-return-section" class="hidden" style="vertical-align: top;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Trajet Retour</span>
+                                <strong id="ticket-return-date" style="font-size: 15px; color: #111118;">YYYY-MM-DD</strong>
+                                <span style="font-size: 13px; color: #4a5568; font-weight: 600;"> à </span>
+                                <span id="ticket-return-time" style="font-size: 15px; font-weight: 800; color: #9e7d47;">15:00</span>
+                            </td>
+                        </tr>
+                    </table>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Place Réservée</span>
-                            <strong id="ticket-seat" style="font-size: 15px; color: #111118; font-weight: 800;">Siège Avant</strong>
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Véhicule Assigné</span>
-                            <strong id="ticket-vehicle" style="font-size: 14px; color: #111118;">Véhicule 1</strong>
-                        </div>
+                    <table width="100%" cellspacing="0" cellpadding="0" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
+                        <tr>
+                            <td width="50%" style="vertical-align: top; padding-right: 10px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Place Réservée</span>
+                                <strong id="ticket-seat" style="font-size: 15px; color: #111118; font-weight: 800;">Siège Avant</strong>
+                            </td>
+                            <td width="50%" style="vertical-align: top;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Véhicule Assigné</span>
+                                <strong id="ticket-vehicle" style="font-size: 14px; color: #111118;">Véhicule VIP 1 (Changan)</strong>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #edf2f7; font-size: 11px; color: #2d3748;">
+                        <strong>Points d'embarquement & d'arrivée :</strong> Douala (Bonamoussadi / <strong>KEVAS SARL</strong>) &bull; Yaoundé (Etoa-Meki / <strong>SOA TOUR</strong>)
                     </div>
                 </div>
 
                 <!-- Section 3 : Justificatif et Informations de Paiement -->
-                <div style="background: #faf8f5; border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+                <div style="background: #faf8f5; border: 1px solid #d4bd9a; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
                     <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #9e7d47; letter-spacing: 1.5px; margin-bottom: 10px;">
                         2. Données Financières & Transaction de Paiement
                     </div>
-                    <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; align-items: center;">
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Montant Réglé</span>
-                            <strong id="ticket-amount" style="font-size: 20px; color: #9e7d47; font-weight: 800;">20 000 FCFA</strong>
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">ID Transaction (Paiement)</span>
-                            <strong id="ticket-tx-id" style="font-size: 13px; font-family: monospace; color: #111118; word-break: break-all;">OM-000000</strong>
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Date & Heure Paiement</span>
-                            <span id="ticket-payment-date" style="font-size: 12px; color: #111118; font-weight: 600;">--/--/----</span>
-                        </div>
-                    </div>
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td width="38%" style="vertical-align: top; padding-right: 8px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Montant Réglé</span>
+                                <strong id="ticket-amount" style="font-size: 19px; color: #9e7d47; font-weight: 800;">20 000 FCFA</strong>
+                            </td>
+                            <td width="34%" style="vertical-align: top; padding-right: 8px;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">ID Transaction</span>
+                                <strong id="ticket-tx-id" style="font-size: 13px; font-family: monospace; color: #111118;">OM-000000</strong>
+                            </td>
+                            <td width="28%" style="vertical-align: top;">
+                                <span style="display: block; font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 600;">Date & Heure</span>
+                                <span id="ticket-payment-date" style="font-size: 12px; color: #111118; font-weight: 600;">--/--/----</span>
+                            </td>
+                        </tr>
+                    </table>
                     <div style="margin-top: 8px; font-size: 11px; color: #4a5568;">
-                        <span style="color: #718096;">Mode de règlement :</span> <strong id="ticket-payment-provider">Orange Money</strong> &bull; <span style="color: #137333; font-weight: 700;">Statut : Encaissé & Validé</span>
+                        <span style="color: #718096;">Mode de règlement :</span> <strong id="ticket-payment-provider" style="color: #111118;">Orange Money</strong> &bull; <span style="color: #137333; font-weight: 700;">Statut : Encaissé & Validé</span>
                     </div>
                 </div>
 
                 <!-- Section 4 : QR Code d'embarquement & Mentions légales -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e0; padding-top: 16px;">
-                    <div style="max-width: 70%;">
-                        <div style="font-size: 11px; font-weight: 700; color: #111118; margin-bottom: 4px;">
-                            <i class="fas fa-shield-alt" style="color: #9e7d47; margin-right: 5px;"></i> Billet Officiel VIP Connect (Document Valide)
-                        </div>
-                        <p style="font-size: 10px; color: #718096; margin: 0; line-height: 1.45;">
-                            Présentez cette réservation (format numérique ou imprimée) au chauffeur au point d'embarquement, 15 minutes avant l'heure de départ, accompagnée d'une pièce d'identité valide. Assistance client 24h/24 : +237 699 00 00 00.
-                        </p>
-                    </div>
-                    <div style="text-align: center; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: #fff;">
-                        <img id="ticket-qr" src="" alt="QR Code" style="width: 75px; height: 75px; display: block;">
-                        <span style="font-size: 8px; color: #718096; font-family: monospace; display: block; margin-top: 2px;">SCAN EMBARQ.</span>
-                    </div>
-                </div>
+                <table width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px dashed #cbd5e0; padding-top: 14px;">
+                    <tr>
+                        <td style="vertical-align: middle; padding-right: 16px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #111118; margin-bottom: 4px;">
+                                ★ Billet Officiel VIP Connect (Document Valide)
+                            </div>
+                            <p style="font-size: 10.5px; color: #4a5568; margin: 0; line-height: 1.45;">
+                                Présentez ce billet (numérique ou imprimé) à l'agence d'embarquement <strong>15 minutes avant le départ</strong>, muni de votre pièce d'identité valide.<br>
+                                <strong>Assistance & Conciergerie VIP : +237 698 34 68 98</strong>
+                            </p>
+                        </td>
+                        <td width="110" align="center" style="vertical-align: middle; text-align: center; border: 1px solid #cbd5e0; padding: 8px; border-radius: 8px; background: #ffffff;">
+                            <div id="ticket-qr-box" style="width: 90px; height: 90px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                <img id="ticket-qr" src="" alt="QR Code" style="width: 90px; height: 90px; display: block;">
+                            </div>
+                            <span style="font-size: 8.5px; color: #4a5568; font-family: monospace; font-weight: 700; display: block; margin-top: 4px;">SCAN EMBARQ.</span>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
             <!-- Statut de délivrance Email du Billet PDF -->
@@ -1722,7 +1745,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261117"></script>
+    <script src="app.js?v=20261117b"></script>
 </body>
 
 </html>
