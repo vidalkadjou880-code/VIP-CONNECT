@@ -3778,10 +3778,9 @@ const app = {
 
         const qrImg = document.getElementById('ticket-qr');
         let qrDrawn = false;
-        if (qrImg && qrImg.src) {
+        if (qrImg && qrImg.src && qrImg.src.startsWith('data:image/')) {
             try {
                 const img = new Image();
-                img.crossOrigin = 'anonymous';
                 await new Promise((resolve) => {
                     img.onload = resolve;
                     img.onerror = resolve;
@@ -3802,7 +3801,9 @@ const app = {
                     img2.onerror = resolve;
                     img2.src = fallbackUrl;
                 });
-                ctx.drawImage(img2, qrX + 15, qrY + 12, qrBoxSize - 30, qrBoxSize - 30);
+                if (img2.width > 0) {
+                    ctx.drawImage(img2, qrX + 15, qrY + 12, qrBoxSize - 30, qrBoxSize - 30);
+                }
             }
         }
 
@@ -3815,28 +3816,90 @@ const app = {
         return canvas;
     },
 
+    // Générateur PDF A4 binaire natif 100% autonome (zéro dépendance html2pdf / html2canvas / jsPDF)
+    // Encapsule directement l'image JPEG haute résolution du Canvas dans un vrai fichier PDF 1.4 standard.
     createPdfBlobFromCanvas: async function(canvas) {
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        const JsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
-        if (JsPDFClass) {
-            const doc = new JsPDFClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-            return doc.output('blob');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        const base64 = dataUrl.split(',')[1];
+        const binStr = atob(base64);
+        const jpegBytes = new Uint8Array(binStr.length);
+        for (let i = 0; i < binStr.length; i++) {
+            jpegBytes[i] = binStr.charCodeAt(i);
         }
-        if (typeof html2pdf !== 'undefined') {
-            const imgEl = document.createElement('img');
-            imgEl.src = imgData;
-            imgEl.style.width = '700px';
-            imgEl.style.display = 'block';
-            const opt = {
-                margin: [0, 0, 0, 0],
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            return await html2pdf().set(opt).from(imgEl).outputPdf('blob');
+
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+        const pageW = 595.28; // A4 largeur en points PDF (72 dpi)
+        const pageH = 841.89; // A4 hauteur en points PDF (72 dpi)
+
+        const enc = new TextEncoder();
+        const chunks = [];
+        const offsets = [0];
+        let pos = 0;
+
+        const writeStr = (str) => {
+            const b = enc.encode(str);
+            chunks.push(b);
+            pos += b.length;
+        };
+        const writeBytes = (b) => {
+            chunks.push(b);
+            pos += b.length;
+        };
+        const startObj = (id) => {
+            offsets[id] = pos;
+            writeStr(`${id} 0 obj\n`);
+        };
+        const endObj = () => {
+            writeStr(`\nendobj\n`);
+        };
+
+        // En-tête PDF 1.4
+        writeStr('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
+
+        // 1: Catalog
+        startObj(1);
+        writeStr('<< /Type /Catalog /Pages 2 0 R >>');
+        endObj();
+
+        // 2: Pages
+        startObj(2);
+        writeStr('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+        endObj();
+
+        // 3: Page A4
+        startObj(3);
+        writeStr(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+        endObj();
+
+        // 4: Image XObject (JPEG natif)
+        startObj(4);
+        writeStr(`<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+        writeBytes(jpegBytes);
+        writeStr('\nendstream');
+        endObj();
+
+        // 5: Content stream (dessine l'image sur toute la page A4)
+        const contentStr = `q\n${pageW} 0 0 ${pageH} 0 0 cm\n/Im0 Do\nQ\n`;
+        const contentBytes = enc.encode(contentStr);
+        startObj(5);
+        writeStr(`<< /Length ${contentBytes.length} >>\nstream\n`);
+        writeBytes(contentBytes);
+        writeStr('endstream');
+        endObj();
+
+        // Table XREF
+        const xrefOffset = pos;
+        writeStr('xref\n0 6\n0000000000 65535 f \n');
+        for (let i = 1; i <= 5; i++) {
+            const off = String(offsets[i]).padStart(10, '0');
+            writeStr(`${off} 00000 n \n`);
         }
-        return null;
+
+        // Trailer
+        writeStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+        return new Blob(chunks, { type: 'application/pdf' });
     },
 
     downloadTicketPdf: async function() {
