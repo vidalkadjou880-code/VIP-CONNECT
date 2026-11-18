@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261117">
+    <link rel="stylesheet" href="style.css?v=20261118b">
     <!-- Icones FontAwesome pour un rendu élégant -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Configuration PWA & Notifications Smartphone -->
@@ -212,68 +212,96 @@
             <!-- Témoignages Voyageurs -->
             <div class="testimonials">
                 <div class="container">
-                    <h2 class="section-title">Ce qu'en disent nos membres</h2>
-                    <p class="section-subtitle">La satisfaction de nos voyageurs est notre plus grande réussite</p>
+                    <div class="testimonials-header-badge">
+                        <i class="fas fa-award"></i> <span>AVIS CLIENTS CERTIFIÉS &bull; 4.9 / 5</span>
+                    </div>
+                    <h2 class="section-title" data-i18n="home.testimonials_title">Ce qu'en disent nos membres</h2>
+                    <p class="section-subtitle" data-i18n="home.testimonials_subtitle">La satisfaction de nos voyageurs d'affaires est notre plus grande réussite</p>
 
                     <div class="testimonials-grid">
                         <!-- Témoignage 1 -->
                         <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
+                            <div class="testimonial-card-top">
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <span class="star-score">5.0</span>
+                                </div>
+                                <span class="testimonial-verified-pill">
+                                    <i class="fas fa-circle-check"></i> Voyageur vérifié
+                                </span>
                             </div>
-                            <p class="testimonial-text">"Un service impeccable. J'ai voyagé de Douala à Yaoundé dans un
-                                calme absolu, le véhicule est spacieux et le chauffeur extrêmement courtois. Fini les
-                                gares bondées !"</p>
+                            <div class="testimonial-quote-mark"><i class="fas fa-quote-right"></i></div>
+                            <p class="testimonial-text">"Un service impeccable. J'ai voyagé de Douala à Yaoundé dans un calme absolu, la Changan est spacieuse et le chauffeur extrêmement courtois. Fini les gares bondées !"</p>
+                            <div class="testimonial-route-tag">
+                                <i class="fas fa-route"></i> Trajet : Douala (Bonamoussadi) → Yaoundé
+                            </div>
                             <div class="testimonial-author">
                                 <div class="author-img">MN</div>
                                 <div class="author-info">
                                     <h4>Marc Ngassa</h4>
-                                    <p>Entrepreneur, Douala</p>
+                                    <p>Entrepreneur &bull; Douala</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Témoignage 2 -->
-                        <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
+                        <div class="testimonial-card testimonial-card-featured">
+                            <div class="testimonial-card-top">
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <span class="star-score">5.0</span>
+                                </div>
+                                <span class="testimonial-verified-pill">
+                                    <i class="fas fa-circle-check"></i> Voyageuse vérifiée
+                                </span>
                             </div>
-                            <p class="testimonial-text">"La climatisation fonctionne parfaitement, nous étions seulement
-                                3 passagers. C'est l'équivalent d'un voyage en classe affaires mais sur route
-                                Camerounaise."</p>
+                            <div class="testimonial-quote-mark"><i class="fas fa-quote-right"></i></div>
+                            <p class="testimonial-text">"La climatisation fonctionne parfaitement et les sièges en cuir sont d'un confort exceptionnel. Nous étions seulement 3 passagers : c'est l'équivalent d'une classe affaires sur route."</p>
+                            <div class="testimonial-route-tag">
+                                <i class="fas fa-route"></i> Trajet : Yaoundé (Etoa-Meki) → Douala
+                            </div>
                             <div class="testimonial-author">
                                 <div class="author-img">SE</div>
                                 <div class="author-info">
                                     <h4>Sandra Eboua</h4>
-                                    <p>Consultante Finance, Yaoundé</p>
+                                    <p>Consultante Finance &bull; Yaoundé</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Témoignage 3 -->
                         <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
+                            <div class="testimonial-card-top">
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <span class="star-score">5.0</span>
+                                </div>
+                                <span class="testimonial-verified-pill">
+                                    <i class="fas fa-circle-check"></i> Voyageur vérifié
+                                </span>
                             </div>
-                            <p class="testimonial-text">"La vérification d'identité avant réservation est rassurante, on
-                                sait avec qui on voyage. Le paiement Mobile Money est ultra-fluide et instantané."</p>
+                            <div class="testimonial-quote-mark"><i class="fas fa-quote-right"></i></div>
+                            <p class="testimonial-text">"La vérification d'identité avant réservation est très rassurante, on sait avec qui on voyage. Le paiement Mobile Money et la réception du billet PDF avec QR code sont instantanés."</p>
+                            <div class="testimonial-route-tag">
+                                <i class="fas fa-route"></i> Trajet Aller-Retour : Douala ⇄ Yaoundé
+                            </div>
                             <div class="testimonial-author">
                                 <div class="author-img">PK</div>
                                 <div class="author-info">
                                     <h4>Paul Kotto</h4>
-                                    <p>Directeur de Projet</p>
+                                    <p>Directeur de Projet &bull; Douala</p>
                                 </div>
                             </div>
                         </div>
@@ -1745,7 +1773,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261118"></script>
+    <script src="app.js?v=20261118b"></script>
 </body>
 
 </html>

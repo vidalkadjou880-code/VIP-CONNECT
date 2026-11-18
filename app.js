@@ -4196,23 +4196,36 @@ const app = {
             let starsHtml = '';
             for (let i = 1; i <= 5; i++) {
                 if (i <= r.stars) {
-                    starsHtml += '<i class="fas fa-star" style="color: var(--primary-gold);"></i>';
+                    starsHtml += '<i class="fas fa-star"></i>';
                 } else {
-                    starsHtml += '<i class="far fa-star" style="color: var(--text-muted);"></i>';
+                    starsHtml += '<i class="far fa-star" style="opacity: 0.35;"></i>';
                 }
             }
+            const initials = (r.author || 'VP')
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(w => w.charAt(0).toUpperCase())
+                .join('');
 
             html += `
                 <div class="testimonial-card">
-                    <div class="stars" style="margin-bottom: 10px;">
-                        ${starsHtml}
+                    <div class="testimonial-card-top">
+                        <div class="stars">
+                            ${starsHtml}
+                            <span class="star-score">${Number(r.stars || 5).toFixed(1)}</span>
+                        </div>
+                        <span class="testimonial-verified-pill">
+                            <i class="fas fa-circle-check"></i> Voyageur vérifié
+                        </span>
                     </div>
+                    <div class="testimonial-quote-mark"><i class="fas fa-quote-right"></i></div>
                     <p class="testimonial-text">"${r.text}"</p>
                     <div class="testimonial-author">
-                        <div class="author-img">${r.author.charAt(0)}</div>
+                        <div class="author-img">${initials}</div>
                         <div class="author-info">
-                            <h4 style="color: var(--text-white); margin-bottom: 2px;">${r.author}</h4>
-                            <p style="color: var(--text-muted); font-size: 12px;">${r.role} • ${r.date}</p>
+                            <h4>${r.author}</h4>
+                            <p>${r.role} &bull; ${r.date}</p>
                         </div>
                     </div>
                 </div>
