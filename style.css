@@ -419,8 +419,8 @@ main {
 }
 
 .testimonial-card {
-    background: linear-gradient(165deg, #14161f 0%, #0d0e14 100%);
-    border: 1px solid rgba(197, 168, 128, 0.28);
+    background: #ffffff;
+    border: 1px solid rgba(197, 168, 128, 0.35);
     border-top: 3px solid #c5a880;
     border-radius: 18px;
     padding: 28px 26px;
@@ -430,19 +430,19 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07);
 }
 
 .testimonial-card-featured {
-    border-color: rgba(212, 175, 55, 0.6);
-    border-top: 3px solid #ffd700;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.26), 0 0 25px rgba(197, 168, 128, 0.12);
+    border-color: rgba(212, 175, 55, 0.65);
+    border-top: 3px solid #d4af37;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1), 0 0 20px rgba(197, 168, 128, 0.14);
 }
 
 .testimonial-card:hover {
     border-color: #d4af37;
     transform: translateY(-7px);
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.28), 0 0 25px rgba(212, 175, 55, 0.18);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.12), 0 0 25px rgba(212, 175, 55, 0.16);
 }
 
 .testimonial-card-top {
@@ -465,16 +465,16 @@ main {
 
 .stars i {
     color: #f5b301 !important;
-    filter: drop-shadow(0 0 6px rgba(245, 179, 1, 0.35));
+    filter: drop-shadow(0 0 4px rgba(245, 179, 1, 0.25));
 }
 
 .star-score {
     margin-left: 6px;
     font-size: 12.5px;
     font-weight: 800;
-    color: #ffffff;
+    color: #92400e;
     background: rgba(245, 179, 1, 0.16);
-    border: 1px solid rgba(245, 179, 1, 0.4);
+    border: 1px solid rgba(245, 179, 1, 0.45);
     padding: 2px 7px;
     border-radius: 6px;
 }
@@ -485,9 +485,9 @@ main {
     gap: 5px;
     font-size: 11px;
     font-weight: 700;
-    color: #34d399;
+    color: #059669;
     background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(52, 211, 153, 0.35);
+    border: 1px solid rgba(16, 185, 129, 0.35);
     padding: 4px 10px;
     border-radius: 20px;
 }
@@ -497,7 +497,7 @@ main {
     top: 52px;
     right: 22px;
     font-size: 46px;
-    color: rgba(197, 168, 128, 0.08);
+    color: rgba(197, 168, 128, 0.15);
     pointer-events: none;
     z-index: 1;
 }
@@ -523,7 +523,7 @@ main {
 
 .testimonial-text {
     font-style: normal;
-    color: #e2e8f0;
+    color: #1e293b;
     line-height: 1.7;
     margin-bottom: 18px;
     font-size: 14.5px;
@@ -537,10 +537,10 @@ main {
     align-items: center;
     gap: 7px;
     font-size: 11.5px;
-    font-weight: 600;
-    color: #c5a880;
-    background: rgba(197, 168, 128, 0.1);
-    border: 1px solid rgba(197, 168, 128, 0.22);
+    font-weight: 700;
+    color: #8e7148;
+    background: rgba(197, 168, 128, 0.14);
+    border: 1px solid rgba(197, 168, 128, 0.35);
     padding: 6px 12px;
     border-radius: 8px;
     margin-bottom: 18px;
@@ -552,7 +552,7 @@ main {
     align-items: center;
     gap: 14px;
     padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .author-img {
@@ -560,7 +560,7 @@ main {
     height: 48px;
     border-radius: 50%;
     background: linear-gradient(135deg, #f6e7c1 0%, #c5a880 55%, #8e7148 100%);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(197, 168, 128, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -568,20 +568,20 @@ main {
     font-size: 15px;
     letter-spacing: 0.5px;
     color: #111118;
-    box-shadow: 0 4px 12px rgba(197, 168, 128, 0.35);
+    box-shadow: 0 4px 12px rgba(197, 168, 128, 0.3);
     flex-shrink: 0;
 }
 
 .author-info h4 {
     font-size: 15px;
     font-weight: 700;
-    color: #ffffff !important;
+    color: #111118 !important;
     margin-bottom: 3px;
 }
 
 .author-info p {
     font-size: 12.5px;
-    color: #94a3b8 !important;
+    color: #64748b !important;
 }
 
 /* File Upload Component */
@@ -1236,10 +1236,10 @@ main {
 }
 
 .admin-sidebar {
-    background: #0d0e13; /* Barre latérale reste en noir */
-    border-right: 1px solid rgba(197, 168, 128, 0.22);
+    background: #ffffff;
+    border-right: 1px solid rgba(197, 168, 128, 0.35);
     padding: 30px 16px;
-    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
 }
 
 .admin-nav {
@@ -1254,7 +1254,7 @@ main {
     gap: 12px;
     padding: 13px 16px;
     border-radius: 8px;
-    color: #ffffff !important; /* Écrits sur les onglets en blanc */
+    color: #1e293b !important;
     text-decoration: none;
     font-size: 14.5px;
     font-weight: 600;
@@ -1264,33 +1264,33 @@ main {
 }
 
 .admin-nav-item i {
-    color: #c5a880 !important; /* Icônes dorées lumineuses */
+    color: #9e7d47 !important;
     font-size: 16px;
     transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .admin-nav-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(197, 168, 128, 0.12);
+    color: #111118 !important;
+    border-color: rgba(197, 168, 128, 0.35);
     transform: translateX(3px);
 }
 
 .admin-nav-item:hover i {
     transform: scale(1.1);
-    color: #ffffff !important;
+    color: #9e7d47 !important;
 }
 
 .admin-nav-item.active {
-    background: linear-gradient(135deg, rgba(197, 168, 128, 0.26) 0%, rgba(197, 168, 128, 0.1) 100%);
-    border: 1px solid rgba(197, 168, 128, 0.55);
-    color: #ffffff !important;
+    background: linear-gradient(135deg, rgba(197, 168, 128, 0.28) 0%, rgba(197, 168, 128, 0.12) 100%);
+    border: 1px solid rgba(197, 168, 128, 0.65);
+    color: #111118 !important;
     font-weight: 700;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 12px rgba(197, 168, 128, 0.18);
 }
 
 .admin-nav-item.active i {
-    color: #e5c99f !important;
+    color: #8e7148 !important;
 }
 
 .admin-content {
@@ -2139,13 +2139,13 @@ footer {
     .admin-sidebar {
         width: 100%;
         border-right: none;
-        border-bottom: 1px solid rgba(197, 168, 128, 0.25);
+        border-bottom: 1px solid rgba(197, 168, 128, 0.35);
         padding: 12px 10px;
         position: sticky;
-        top: 64px;
+        top: 60px;
         z-index: 90;
-        background: #0d0e13;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        background: #ffffff;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
     }
     
     .admin-sidebar > div {
@@ -2171,13 +2171,15 @@ footer {
         font-size: 13.5px;
         flex-shrink: 0;
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #f8fafc;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #1e293b !important;
     }
     
     .admin-nav-item.active {
         background: linear-gradient(135deg, rgba(197, 168, 128, 0.35) 0%, rgba(197, 168, 128, 0.15) 100%);
-        border-color: rgba(197, 168, 128, 0.6);
+        border-color: rgba(197, 168, 128, 0.7);
+        color: #111118 !important;
     }
     
     .admin-content {
@@ -2230,12 +2232,12 @@ footer {
         padding-bottom: 74px !important;
     }
 
-    /* Entête Header Mobile Luxe */
+    /* Entête Header Mobile Clair (comme sur ordinateur) */
     header {
-        background: rgba(15, 16, 22, 0.95) !important;
+        background: rgba(255, 255, 255, 0.97) !important;
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(197, 168, 128, 0.35) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
     }
 
     .header-container {
@@ -2254,9 +2256,9 @@ footer {
         width: 38px;
         height: 38px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(197, 168, 128, 0.35);
-        color: var(--primary-gold);
+        background: rgba(197, 168, 128, 0.12);
+        border: 1px solid rgba(197, 168, 128, 0.45);
+        color: #111118;
         font-size: 16px;
         cursor: pointer;
     }
@@ -2268,11 +2270,11 @@ footer {
         top: 60px;
         left: 0;
         width: 100%;
-        background: rgba(14, 15, 21, 0.98);
-        border-bottom: 2px solid rgba(197, 168, 128, 0.4);
+        background: #ffffff;
+        border-bottom: 2px solid rgba(197, 168, 128, 0.45);
         padding: 16px 14px;
         gap: 10px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
         align-items: stretch;
         z-index: 999;
     }
@@ -2288,18 +2290,18 @@ footer {
         padding: 12px 14px !important;
         font-size: 14.5px !important;
         border-radius: 8px !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        color: #ffffff !important;
+        background: #f8fafc !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        color: #111118 !important;
         display: flex !important;
         align-items: center !important;
         gap: 10px !important;
     }
     
     .nav-btn:hover, .nav-btn.active {
-        background: rgba(197, 168, 128, 0.2) !important;
-        border-color: rgba(197, 168, 128, 0.5) !important;
-        color: var(--primary-gold) !important;
+        background: rgba(197, 168, 128, 0.22) !important;
+        border-color: rgba(197, 168, 128, 0.6) !important;
+        color: #111118 !important;
     }
     
     .nav-btn-highlight-small, .nav-btn-outline-gold {
@@ -2314,8 +2316,8 @@ footer {
     
     .lang-selector {
         padding: 3px 6px !important;
-        border-color: rgba(197, 168, 128, 0.3) !important;
-        background: rgba(0, 0, 0, 0.3) !important;
+        border-color: rgba(0, 0, 0, 0.12) !important;
+        background: #f8fafc !important;
     }
     
     .lang-btn {
@@ -2334,7 +2336,7 @@ footer {
         align-items: center;
         gap: 8px;
         padding: 10px 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
     }
 
     /* Badge Supabase masqué en production pour les clients */
@@ -2343,7 +2345,7 @@ footer {
     }
 
 
-    /* BARRE DE NAVIGATION INFÉRIEURE SMARTPHONE (APP STYLE NATIVE) */
+    /* BARRE DE NAVIGATION INFÉRIEURE SMARTPHONE (CLAIRE COMME SUR ORDI) */
     .mobile-bottom-bar {
         display: flex !important;
         position: fixed !important;
@@ -2351,11 +2353,11 @@ footer {
         left: 0 !important;
         right: 0 !important;
         height: 64px !important;
-        background: rgba(13, 14, 19, 0.97) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
-        border-top: 1px solid rgba(197, 168, 128, 0.35) !important;
-        box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.75) !important;
+        border-top: 1px solid rgba(197, 168, 128, 0.45) !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
         z-index: 1000 !important;
         justify-content: space-around !important;
         align-items: center !important;
@@ -2372,7 +2374,7 @@ footer {
         gap: 3px;
         background: transparent;
         border: none;
-        color: #8a8d9b;
+        color: #64748b;
         font-size: 10.5px;
         font-weight: 600;
         cursor: pointer;
@@ -2391,16 +2393,17 @@ footer {
     
     .mob-tab-btn.active,
     .mob-tab-btn:hover {
-        color: var(--primary-gold);
+        color: #9e7d47;
+        font-weight: 700;
     }
     
     .mob-tab-btn.active i {
-        color: var(--primary-gold);
+        color: #9e7d47;
         transform: translateY(-2px);
     }
     
     .mob-tab-highlight {
-        color: #ffffff;
+        color: #111118;
     }
     
     .mob-badge {
@@ -2656,14 +2659,15 @@ footer {
         font-weight: 800 !important;
     }
     
-    /* Tableaux admin : swipe horizontal fluide et élégant */
+    /* Tableaux admin : swipe horizontal fluide et fond blanc clair comme sur PC */
     .admin-table-container {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
         border-radius: 12px !important;
         margin-bottom: 25px !important;
-        border: 1px solid rgba(197, 168, 128, 0.3) !important;
-        background: #111219 !important;
+        border: 1px solid rgba(197, 168, 128, 0.35) !important;
+        background: #ffffff !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
     }
     
     .admin-table {
@@ -2674,13 +2678,15 @@ footer {
     .admin-table th {
         padding: 12px 14px !important;
         font-size: 11.5px !important;
-        background: rgba(255, 255, 255, 0.04) !important;
+        background: #f8fafc !important;
+        color: #111118 !important;
         white-space: nowrap !important;
     }
     
     .admin-table td {
         padding: 12px 14px !important;
         font-size: 13px !important;
+        color: #1e293b !important;
         white-space: nowrap !important;
     }
     
