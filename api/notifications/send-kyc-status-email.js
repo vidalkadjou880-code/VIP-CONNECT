@@ -162,7 +162,7 @@ function buildKycStatusEmailHtml(data) {
               `}
 
               <div style="font-size: 12px; color: #718096; text-align: center; margin-top: 25px; line-height: 1.5;">
-                Pour toute question ou assistance concernant votre dossier, notre service conciergerie est à votre écoute 7j/7 au <strong>+237 699 99 99 99</strong>.
+                Pour toute question ou assistance concernant votre dossier, notre service conciergerie est à votre écoute 7j/7 (WhatsApp) au <strong>+237 656 70 13 77</strong>.
               </div>
 
             </td>

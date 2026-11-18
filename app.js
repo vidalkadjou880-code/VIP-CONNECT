@@ -3768,7 +3768,7 @@ const app = {
 
         ctx.fillStyle = '#9e7d47';
         ctx.font = 'bold 20px Arial, sans-serif';
-        ctx.fillText('Assistance & Conciergerie VIP 24h/24 : +237 698 34 68 98', X, Y + 138);
+        ctx.fillText('Assistance & Conciergerie VIP 24h/24 (WhatsApp) : +237 656 70 13 77', X, Y + 138);
 
         // Encadré QR Code à droite
         const qrBoxSize = 210;

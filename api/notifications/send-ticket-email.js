@@ -150,7 +150,7 @@ function buildTicketEmailHtml(data) {
           </tr>
           <tr>
             <td style="background-color: #10121a; padding: 20px 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: #718096;">
-              <p style="margin: 0 0 5px 0;">Assistance Voyageur 24h/24 : <strong>+237 698 34 68 98</strong> | vidalkadjou880@gmail.com</p>
+              <p style="margin: 0 0 5px 0;">Assistance Voyageur 24h/24 (WhatsApp) : <strong>+237 656 70 13 77</strong> | vidalkadjou880@gmail.com</p>
               <p style="margin: 0;">© 2026 VIP Connect Transport Agency. Tous droits réservés.</p>
             </td>
           </tr>

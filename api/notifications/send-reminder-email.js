@@ -74,7 +74,7 @@ function buildReminderEmailHtml(data) {
 
           <tr>
             <td style="padding: 20px 25px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: #718096;">
-              <p style="margin: 0;">Assistance et Conciergerie VIP Connect : <strong>+237 698 34 68 98</strong></p>
+              <p style="margin: 0;">Assistance et Conciergerie VIP Connect (WhatsApp) : <strong>+237 656 70 13 77</strong></p>
             </td>
           </tr>
         </table>
