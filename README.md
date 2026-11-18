@@ -11,8 +11,8 @@ VIP est une application web moderne et responsive conçue pour une agence de tra
 2. **Inscription & Connexion Sécurisées** : Authentification par email/téléphone et mot de passe.
 3. **Vérification d'Identité (KYC) Obligatoire** : Module d'envoi chiffré localement des documents (Recto de CNI/Passeport, Verso, Selfie) avec zone de glisser-déposer (*Drag & Drop*) et prévisualisation instantanée. L'accès aux réservations reste bloqué tant que l'identité n'a pas été validée.
 4. **Calculateur Dynamique d'Horaires** : Les trajets disponibles sont filtrés dynamiquement selon l'heure courante de votre appareil.
-   - **Douala → Yaoundé** : 04h00, 10h00, 16h00
-   - **Yaoundé → Douala** : 05h00, 09h00, 15h00
+   - **Douala → Yaoundé** : 04h30, 15h00
+   - **Yaoundé → Douala** : 10h00, 15h00
 5. **Gestion de Capacité stricte** : Réservation bloquée à un maximum de 3 places par véhicule par créneau horaire.
 6. **Simulateur de Paiement Mobile Money** : Choix entre Orange Money et MTN MoMo. Simulation visuelle réaliste d'une invite USSD sur mobile pour valider la transaction par code PIN.
 

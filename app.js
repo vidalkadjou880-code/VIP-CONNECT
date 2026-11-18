@@ -2000,6 +2000,7 @@ const app = {
             returnDateGroup.classList.remove('hidden');
             returnDateInput.required = true;
             if(returnTimeInput) returnTimeInput.required = true;
+            this.updateReturnTimeOptions();
         } else {
             returnDateGroup.classList.add('hidden');
             returnDateInput.required = false;
@@ -2024,12 +2025,28 @@ const app = {
     },
 
 
+    updateReturnTimeOptions: function() {
+        const routeSelect = document.getElementById('book-route');
+        const returnTimeInput = document.getElementById('book-return-time');
+        if (!routeSelect || !returnTimeInput) return;
+        const route = routeSelect.value;
+        // Si l'aller est Douala - Yaoundé, le retour part de Yaoundé (10:00 et 15:00)
+        // Si l'aller est Yaoundé - Douala, le retour part de Douala (04:30 et 15:00)
+        const returnTimes = (route === "Douala - Yaoundé") ? ["10:00", "15:00"] : ["04:30", "15:00"];
+        const currentVal = returnTimeInput.value;
+        const placeholderText = this.t('dashboard.book_return_time_placeholder') || 'Heure';
+        returnTimeInput.innerHTML = `<option value="" disabled ${!returnTimes.includes(currentVal) ? 'selected' : ''} data-i18n="dashboard.book_return_time_placeholder">${placeholderText}</option>` +
+            returnTimes.map(t => `<option value="${t}" ${currentVal === t ? 'selected' : ''}>${t}</option>`).join('');
+    },
+
     updateDynamicSchedules: function() {
         const routeSelect = document.getElementById('book-route');
         const dateInput = document.getElementById('book-date');
         const container = document.getElementById('schedules-container');
         const btnBook = document.getElementById('btn-book-action');
         
+        this.updateReturnTimeOptions();
+
         if (!routeSelect || !dateInput || !container) return;
 
         const route = routeSelect.value;
@@ -2042,13 +2059,13 @@ const app = {
         }
 
         // Récupérer les créneaux par rapport à l'itinéraire
-        // Douala -> Yaoundé : 5h00, 15h00
-        // Yaoundé -> Douala : 5h00, 15h00
+        // Douala -> Yaoundé : 04h30, 15h00
+        // Yaoundé -> Douala : 10h00, 15h00
         let baseTimes = [];
         if (route === "Douala - Yaoundé") {
-            baseTimes = ["05:00", "15:00"];
+            baseTimes = ["04:30", "15:00"];
         } else {
-            baseTimes = ["05:00", "15:00"];
+            baseTimes = ["10:00", "15:00"];
         }
 
         // Obtenir la date actuelle
@@ -3198,9 +3215,9 @@ const app = {
         if (!tbody || !refDate) return;
 
         const routes = [
-            { route: "Douala - Yaoundé", time: "05:00" },
+            { route: "Douala - Yaoundé", time: "04:30" },
             { route: "Douala - Yaoundé", time: "15:00" },
-            { route: "Yaoundé - Douala", time: "05:00" },
+            { route: "Yaoundé - Douala", time: "10:00" },
             { route: "Yaoundé - Douala", time: "15:00" }
         ];
 
