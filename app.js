@@ -4082,7 +4082,8 @@ const app = {
     // -------------------------------------------------------------
     initServiceWorkerAndNotifications: function() {
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then((registration) => {
+            navigator.serviceWorker.register('/sw.js?v=20261118f', { updateViaCache: 'none' }).then((registration) => {
+                registration.update().catch(() => {});
                 console.log('✅ Service Worker VIP Connect enregistré avec succès:', registration.scope);
             }).catch((err) => {
                 console.warn('⚠️ Service Worker non enregistré:', err.message);

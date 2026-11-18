@@ -4,14 +4,8 @@
  * et les rappels de départ.
  */
 
-const CACHE_NAME = 'vip-connect-v10';
+const CACHE_NAME = 'vip-connect-v11';
 const CORE_ASSETS = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    '/supabase-client.js',
-    '/html2pdf.bundle.min.js',
     '/manifest.json',
     '/images/vip_connect_logo.png'
 ];
@@ -34,23 +28,21 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((name) => {
-                    if (name !== CACHE_NAME) {
-                        return caches.delete(name);
-                    }
+                    return caches.delete(name);
                 })
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// Interception réseau avec stratégie Network-First (données fraîches en priorité)
+// Interception réseau avec stratégie Network-First sans cache disque obsolète
 self.addEventListener('fetch', (event) => {
     // Ne pas intercepter les requêtes API ou Supabase
     if (event.request.url.includes('/api/') || event.request.url.includes('supabase.co')) {
         return;
     }
     event.respondWith(
-        fetch(event.request).catch(() => {
+        fetch(event.request, { cache: 'no-store' }).catch(() => {
             return caches.match(event.request);
         })
     );
