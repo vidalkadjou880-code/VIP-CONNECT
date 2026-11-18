@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261118c">
+    <link rel="stylesheet" href="style.css?v=20261118d">
     <!-- Icones FontAwesome pour un rendu élégant -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Configuration PWA & Notifications Smartphone -->
@@ -1517,10 +1517,26 @@
     </div>
 
     <!-- Modale Ticket PDF -->
-    <!-- Modale Ticket PDF -->
     <div id="modal-ticket" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 680px; padding: 0; background: #0f1015; border-radius: 16px; border: 1px solid rgba(197, 168, 128, 0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.8); overflow: hidden;">
+        <div class="modal-content" style="max-width: 680px; width: 95%; max-height: 90vh; padding: 0; background: #ffffff; border-radius: 16px; border: 2px solid #c5a880; box-shadow: 0 25px 60px rgba(0,0,0,0.45); display: flex; flex-direction: column; overflow: hidden;">
             
+            <!-- Barre supérieure mobile + PC avec bouton Télécharger PDF toujours visible -->
+            <div style="padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #faf8f5; border-bottom: 1px solid rgba(197, 168, 128, 0.4); flex-shrink: 0;">
+                <span style="font-size: 13px; font-weight: 800; color: #111118;">
+                    <i class="fas fa-ticket-alt" style="color: #9e7d47; margin-right: 6px;"></i> Votre Billet VIP
+                </span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-gold" style="width: auto; min-height: 36px !important; padding: 7px 14px !important; font-size: 12.5px !important; font-weight: 700;" onclick="app.downloadTicketPdf()">
+                        <i class="fas fa-download" style="margin-right: 5px;"></i> Télécharger PDF
+                    </button>
+                    <button class="btn-outline" style="width: auto; min-height: 36px !important; padding: 7px 12px !important; font-size: 12.5px !important; color: #111118 !important; border-color: #cbd5e0 !important;" onclick="app.closeTicketModal()">
+                        &times; Fermer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zone scrollable contenant le billet -->
+            <div style="overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
             <!-- Conteneur qui sera converti en PDF -->
             <div id="ticket-pdf-content" style="background-color: #ffffff; color: #111118; padding: 28px 26px; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box;">
                 
@@ -1670,21 +1686,23 @@
                 </table>
             </div>
 
+            </div><!-- Fin zone scrollable -->
+
             <!-- Statut de délivrance Email du Billet PDF -->
-            <div id="ticket-email-status-bar" style="background: rgba(16, 185, 129, 0.12); border-top: 1px solid rgba(16, 185, 129, 0.3); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-envelope-circle-check" style="color: #34d399; font-size: 16px;"></i>
-                    <span style="font-size: 12.5px; color: #e2e8f0;">Billet officiel envoyé par email à : <strong id="ticket-email-target" style="color: #34d399;">--</strong></span>
+            <div id="ticket-email-status-bar" style="background: #f0fdf4; border-top: 1px solid #bbf7d0; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-envelope-circle-check" style="color: #16a34a; font-size: 15px;"></i>
+                    <span style="font-size: 12px; color: #166534;">Envoyé par email à : <strong id="ticket-email-target" style="color: #15803d;">--</strong></span>
                 </div>
-                <button class="btn-outline" style="width: auto; padding: 5px 12px; font-size: 11px; border-color: rgba(52, 211, 153, 0.4); color: #34d399;" onclick="app.resendTicketEmail()">
+                <button class="btn-outline" style="width: auto; min-height: 32px !important; padding: 4px 10px !important; font-size: 11px !important; border-color: #86efac !important; color: #15803d !important;" onclick="app.resendTicketEmail()">
                     <i class="fas fa-paper-plane" style="margin-right: 4px;"></i> <span data-i18n="ticket.resend_email">Renvoyer par Email</span>
                 </button>
             </div>
 
-            <!-- Actions du Modal -->
-            <div style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; background: #16171e; border-top: 1px solid rgba(197, 168, 128, 0.25);">
-                <button class="btn-outline" style="width: auto; padding: 10px 22px; font-size: 14px;" onclick="app.closeTicketModal()" data-i18n="ticket.close">Fermer</button>
-                <button class="btn-gold" style="width: auto; padding: 11px 26px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.3);" onclick="app.downloadTicketPdf()" data-i18n="ticket.download">
+            <!-- Actions du Modal (Toujours épinglé en bas sur smartphone et PC) -->
+            <div style="padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #faf8f5; border-top: 1px solid rgba(197, 168, 128, 0.35); flex-shrink: 0;">
+                <button class="btn-outline" style="width: auto; padding: 10px 18px; font-size: 13.5px; color: #111118 !important; border-color: #cbd5e0 !important;" onclick="app.closeTicketModal()" data-i18n="ticket.close">Fermer</button>
+                <button class="btn-gold" style="flex: 1; padding: 11px 18px; font-size: 13.5px; font-weight: 800; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.35);" onclick="app.downloadTicketPdf()" data-i18n="ticket.download">
                     <i class="fas fa-file-pdf" style="margin-right: 8px;"></i> Télécharger ma réservation (PDF)
                 </button>
             </div>
@@ -1773,7 +1791,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261118b"></script>
+    <script src="app.js?v=20261118d"></script>
 </body>
 
 </html>

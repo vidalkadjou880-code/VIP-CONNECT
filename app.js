@@ -3495,65 +3495,362 @@ const app = {
         }
     },
 
-    buildCleanTicketClone: function() {
-        const source = document.getElementById('ticket-pdf-content');
-        if (!source) return null;
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
-        wrapper.style.left = '0';
-        wrapper.style.top = '0';
-        wrapper.style.width = '720px';
-        wrapper.style.background = '#ffffff';
-        wrapper.style.zIndex = '-9999';
-        wrapper.style.opacity = '1';
-        wrapper.style.pointerEvents = 'none';
-        const clone = source.cloneNode(true);
-        clone.style.width = '720px';
-        clone.style.maxWidth = '720px';
-        clone.style.padding = '30px 28px';
-        clone.style.background = '#ffffff';
-        clone.style.color = '#111118';
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
-        return { wrapper, clone };
-    },
-
-    downloadTicketPdf: async function() {
-        const element = document.getElementById('ticket-pdf-content');
-        if (!element) return;
-        const resId = (document.getElementById('ticket-res-id') ? document.getElementById('ticket-res-id').innerText : 'RESERVATION').replace(/[^a-zA-Z0-9_-]/g, '');
-        const filename = `Billet_VIP_Connect_${resId}.pdf`;
-        
-        if (typeof html2pdf === 'undefined') {
-            this.showToast("Génération PDF locale via navigateur...", "info");
-            window.print();
-            return;
-        }
-        
-        this.showToast("Génération de votre billet VIP (PDF) en cours...", "info");
-
-        // Attendre que le QR Code haute résolution soit prêt (max 1.2s)
+    // Dessine le billet officiel A4 haute résolution directement sur un Canvas HTML5
+    // (Garantit 100% des textes, cadres et QR code visibles sur PC et Smartphone sans aucun bug html2canvas)
+    renderTicketCanvas: async function() {
         if (this._qrReadyPromise) {
             try { await Promise.race([this._qrReadyPromise, new Promise(r => setTimeout(r, 1200))]); } catch (e) {}
         }
 
-        const temp = this.buildCleanTicketClone();
-        const targetEl = temp ? temp.clone : element;
-        
-        const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     filename,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', width: 720, windowWidth: 720, scrollY: 0, scrollX: 0, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        const getTxt = (id, fallback = '') => {
+            const el = document.getElementById(id);
+            return (el && el.innerText ? el.innerText.trim() : fallback);
         };
-        
-        try {
-            const worker = html2pdf().set(opt).from(targetEl);
-            const pdfBlob = await worker.outputPdf('blob');
-            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
-            const blobUrl = URL.createObjectURL(pdfBlob);
 
+        const resId = getTxt('ticket-res-id', 'RES-00000');
+        const lastname = getTxt('ticket-lastname', 'CLIENT');
+        const firstname = getTxt('ticket-firstname', '');
+        const phone = getTxt('ticket-phone', '');
+        const route = getTxt('ticket-route', 'Douala - Yaoundé');
+        const ticketType = getTxt('ticket-type', 'Aller simple');
+        const depDate = getTxt('ticket-departure-date', '');
+        const depTime = getTxt('ticket-departure-time', '');
+        const retSection = document.getElementById('ticket-return-section');
+        const hasReturn = retSection && !retSection.classList.contains('hidden');
+        const retDate = getTxt('ticket-return-date', '');
+        const retTime = getTxt('ticket-return-time', '');
+        const seat = getTxt('ticket-seat', 'Avant');
+        const vehicle = getTxt('ticket-vehicle', 'Véhicule VIP 1 (Changan)');
+        const amount = getTxt('ticket-amount', '20 000 FCFA');
+        const txId = getTxt('ticket-tx-id', 'OM-000000');
+        const payDate = getTxt('ticket-payment-date', '');
+        const provider = getTxt('ticket-payment-provider', 'Mobile Money');
+
+        const W = 1240;
+        const H = 1754; // Format A4 en haute définition
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        const roundRect = (x, y, w, h, r, fill, stroke, lineW = 2) => {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+            if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineW; ctx.stroke(); }
+        };
+
+        // Fond de page A4 blanc
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+
+        // Bordure extérieure dorée élégante
+        roundRect(50, 50, W - 100, H - 100, 24, '#ffffff', '#c5a880', 4);
+
+        const X = 100;
+        const CW = W - 200;
+        let Y = 115;
+
+        // EN-TÊTE VIP CONNECT
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = 'bold 44px Arial, sans-serif';
+        ctx.fillText('★', X, Y + 36);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = '900 44px Arial, sans-serif';
+        ctx.fillText('VIP CONNECT', X + 52, Y + 36);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillText('TRANSPORT PRIVÉ PREMIUM DOUALA ↔ YAOUNDÉ', X, Y + 72);
+
+        roundRect(X, Y + 88, 430, 36, 8, '#f5efe6', '#d4bd9a', 1.5);
+        ctx.fillStyle = '#8e7148';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('SERVICE PREMIÈRE CLASSE • FLOTTE CHANGAN', X + 14, Y + 112);
+
+        // Badge Paiement Validé à droite
+        roundRect(X + CW - 350, Y, 350, 44, 10, '#e6f4ea', '#34a853', 2);
+        ctx.fillStyle = '#137333';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✓ PAIEMENT VALIDÉ & CONFIRMÉ', X + CW - 175, Y + 28);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 18px Arial, sans-serif';
+        ctx.fillText('Réf. Réservation', X + CW, Y + 76);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = '900 34px Consolas, monospace';
+        ctx.fillText(resId, X + CW, Y + 116);
+        ctx.textAlign = 'left';
+
+        // Ligne dorée sous l'en-tête
+        Y += 150;
+        ctx.strokeStyle = '#c5a880';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(X, Y);
+        ctx.lineTo(X + CW, Y);
+        ctx.stroke();
+
+        // SECTION 1 : IDENTIFICATION DU VOYAGEUR
+        Y += 35;
+        roundRect(X, Y, CW, 175, 16, '#faf8f5', '#d4bd9a', 2);
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillText('1. IDENTIFICATION DU VOYAGEUR', X + 28, Y + 40);
+
+        const col1 = X + 28;
+        const col2 = X + 360;
+        const col3 = X + 690;
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('NOM', col1, Y + 85);
+        ctx.fillText('PRÉNOM', col2, Y + 85);
+        ctx.fillText('TÉLÉPHONE (CONTACT)', col3, Y + 85);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillText(lastname.toUpperCase(), col1, Y + 128);
+        ctx.fillText(firstname || '-', col2, Y + 128);
+        ctx.font = 'bold 26px Consolas, monospace';
+        ctx.fillText(phone, col3, Y + 128);
+
+        // SECTION 2 : DÉTAILS DU VOYAGE & ITINÉRAIRE
+        Y += 210;
+        roundRect(X, Y, CW, 420, 16, '#ffffff', '#cbd5e0', 2);
+        // Bandeau gauche doré
+        roundRect(X, Y, 10, 420, 4, '#c5a880', null, 0);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('ITINÉRAIRE EXPRESS', X + 32, Y + 44);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = '900 34px Arial, sans-serif';
+        ctx.fillText(route, X + 32, Y + 86);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('TYPE DE BILLET', X + CW - 28, Y + 42);
+        ctx.textAlign = 'left';
+
+        roundRect(X + CW - 228, Y + 54, 200, 42, 10, '#111118', null, 0);
+        ctx.fillStyle = '#c5a880';
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ticketType, X + CW - 128, Y + 82);
+        ctx.textAlign = 'left';
+
+        // Séparateur
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(X + 28, Y + 116);
+        ctx.lineTo(X + CW - 28, Y + 116);
+        ctx.stroke();
+
+        // Dates Aller / Retour
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('TRAJET ALLER (DÉPART)', X + 32, Y + 154);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillText(`${depDate}  à  `, X + 32, Y + 194);
+        const depW = ctx.measureText(`${depDate}  à  `).width;
+        ctx.fillStyle = '#9e7d47';
+        ctx.fillText(depTime, X + 32 + depW, Y + 194);
+
+        if (hasReturn && retDate) {
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.fillText('TRAJET RETOUR', X + 540, Y + 154);
+
+            ctx.fillStyle = '#111118';
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillText(`${retDate}  à  `, X + 540, Y + 194);
+            const retW = ctx.measureText(`${retDate}  à  `).width;
+            ctx.fillStyle = '#9e7d47';
+            ctx.fillText(retTime, X + 540 + retW, Y + 194);
+        }
+
+        // Séparateur pointillé
+        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = '#cbd5e0';
+        ctx.beginPath();
+        ctx.moveTo(X + 28, Y + 224);
+        ctx.lineTo(X + CW - 28, Y + 224);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Place & Véhicule
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('PLACE RÉSERVÉE', X + 32, Y + 262);
+        ctx.fillText('VÉHICULE ASSIGNÉ', X + 540, Y + 262);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText(seat, X + 32, Y + 302);
+        ctx.fillText(vehicle + ' (Changan)', X + 540, Y + 302);
+
+        // Points d'embarquement
+        roundRect(X + 28, Y + 332, CW - 56, 64, 10, '#faf8f5', '#e2e8f0', 1.5);
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillText('📍 Agences Départ & Arrivée :', X + 46, Y + 360);
+        ctx.font = '600 18px Arial, sans-serif';
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Douala : Bonamoussadi (KEVAS SARL)   •   Yaoundé : Etoa-Meki (SOA TOUR)', X + 46, Y + 385);
+
+        // SECTION 3 : DONNÉES FINANCIÈRES & PAIEMENT
+        Y += 455;
+        roundRect(X, Y, CW, 215, 16, '#faf8f5', '#d4bd9a', 2);
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillText('2. DONNÉES FINANCIÈRES & TRANSACTION DE PAIEMENT', X + 28, Y + 40);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText('MONTANT RÉGLÉ', col1, Y + 85);
+        ctx.fillText('ID TRANSACTION', col2, Y + 85);
+        ctx.fillText('DATE & HEURE PAIEMENT', col3, Y + 85);
+
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = '900 34px Arial, sans-serif';
+        ctx.fillText(amount, col1, Y + 130);
+
+        ctx.fillStyle = '#111118';
+        ctx.font = 'bold 25px Consolas, monospace';
+        ctx.fillText(txId, col2, Y + 128);
+
+        ctx.font = 'bold 22px Arial, sans-serif';
+        ctx.fillText(payDate, col3, Y + 128);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '600 19px Arial, sans-serif';
+        ctx.fillText(`Mode de règlement : ${provider}   •   `, col1, Y + 182);
+        const provW = ctx.measureText(`Mode de règlement : ${provider}   •   `).width;
+        ctx.fillStyle = '#137333';
+        ctx.font = 'bold 19px Arial, sans-serif';
+        ctx.fillText('Statut : Encaissé & Validé ✓', col1 + provW, Y + 182);
+
+        // SECTION 4 : QR CODE & MENTIONS LÉGALES
+        Y += 255;
+        ctx.setLineDash([8, 6]);
+        ctx.strokeStyle = '#cbd5e0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(X, Y);
+        ctx.lineTo(X + CW, Y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        Y += 35;
+        ctx.fillStyle = '#111118';
+        ctx.font = 'bold 22px Arial, sans-serif';
+        ctx.fillText('★ Billet Officiel VIP Connect (Document d\'Embarquement Valide)', X, Y + 30);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '400 18px Arial, sans-serif';
+        ctx.fillText('Présentez ce billet (format numérique sur téléphone ou imprimé) à l\'agence', X, Y + 68);
+        ctx.fillText('d\'embarquement 15 minutes avant l\'heure de départ, muni de votre pièce d\'identité.', X, Y + 96);
+
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.fillText('Assistance & Conciergerie VIP 24h/24 : +237 698 34 68 98', X, Y + 138);
+
+        // Encadré QR Code à droite
+        const qrBoxSize = 210;
+        const qrX = X + CW - qrBoxSize;
+        const qrY = Y - 5;
+        roundRect(qrX, qrY, qrBoxSize, qrBoxSize + 34, 14, '#ffffff', '#cbd5e0', 2);
+
+        const qrImg = document.getElementById('ticket-qr');
+        let qrDrawn = false;
+        if (qrImg && qrImg.src) {
+            try {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                    img.src = qrImg.src;
+                });
+                if (img.width > 0) {
+                    ctx.drawImage(img, qrX + 15, qrY + 12, qrBoxSize - 30, qrBoxSize - 30);
+                    qrDrawn = true;
+                }
+            } catch (e) {}
+        }
+        if (!qrDrawn) {
+            const fallbackUrl = this.generateLocalQrDataUrl(resId);
+            if (fallbackUrl) {
+                const img2 = new Image();
+                await new Promise((resolve) => {
+                    img2.onload = resolve;
+                    img2.onerror = resolve;
+                    img2.src = fallbackUrl;
+                });
+                ctx.drawImage(img2, qrX + 15, qrY + 12, qrBoxSize - 30, qrBoxSize - 30);
+            }
+        }
+
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 15px Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SCAN EMBARQ.', qrX + qrBoxSize / 2, qrY + qrBoxSize + 18);
+        ctx.textAlign = 'left';
+
+        return canvas;
+    },
+
+    createPdfBlobFromCanvas: async function(canvas) {
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const JsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+        if (JsPDFClass) {
+            const doc = new JsPDFClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            return doc.output('blob');
+        }
+        if (typeof html2pdf !== 'undefined') {
+            const imgEl = document.createElement('img');
+            imgEl.src = imgData;
+            imgEl.style.width = '700px';
+            imgEl.style.display = 'block';
+            const opt = {
+                margin: [0, 0, 0, 0],
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            return await html2pdf().set(opt).from(imgEl).outputPdf('blob');
+        }
+        return null;
+    },
+
+    downloadTicketPdf: async function() {
+        const resId = (document.getElementById('ticket-res-id') ? document.getElementById('ticket-res-id').innerText : 'RESERVATION').replace(/[^a-zA-Z0-9_-]/g, '');
+        const filename = `Billet_VIP_Connect_${resId}.pdf`;
+        
+        this.showToast("Génération de votre billet VIP (PDF) en cours...", "info");
+
+        try {
+            const canvas = await this.renderTicketCanvas();
+            const pdfBlob = await this.createPdfBlobFromCanvas(canvas);
+            if (!pdfBlob) throw new Error('PDF Blob indisponible');
+
+            const blobUrl = URL.createObjectURL(pdfBlob);
             const downloadLink = document.createElement('a');
             downloadLink.href = blobUrl;
             downloadLink.download = filename;
@@ -3570,38 +3867,17 @@ const app = {
 
             this.showToast("Votre billet de réservation PDF a été téléchargé avec succès !", "success");
         } catch (err) {
-            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
-            console.warn('html2pdf outputPdf fallback vers standard .save():', err);
-            try {
-                await html2pdf().set(opt).from(element).save();
-                this.showToast("Votre billet de réservation PDF a été téléchargé avec succès !", "success");
-            } catch (err2) {
-                console.error('Erreur finale téléchargement PDF:', err2);
-                this.showToast("Ouverture de l'aperçu d'impression...", "warning");
-                window.print();
-            }
+            console.error('Erreur téléchargement PDF:', err);
+            this.showToast("Ouverture de l'aperçu d'impression...", "warning");
+            window.print();
         }
     },
 
     // Générer le billet en Base64 pour l'envoi par email (Brevo)
     getTicketPdfBase64: async function() {
-        const element = document.getElementById('ticket-pdf-content');
-        if (!element || typeof html2pdf === 'undefined') return null;
-        if (this._qrReadyPromise) {
-            try { await Promise.race([this._qrReadyPromise, new Promise(r => setTimeout(r, 1200))]); } catch (e) {}
-        }
-        const temp = this.buildCleanTicketClone();
-        const targetEl = temp ? temp.clone : element;
         try {
-            const opt = {
-                margin:       [10, 10, 10, 10],
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', width: 720, windowWidth: 720, scrollY: 0, scrollX: 0, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            const worker = html2pdf().set(opt).from(targetEl);
-            const pdfBlob = await worker.outputPdf('blob');
-            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
+            const canvas = await this.renderTicketCanvas();
+            const pdfBlob = await this.createPdfBlobFromCanvas(canvas);
             if (!pdfBlob) return null;
             return await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -3617,7 +3893,6 @@ const app = {
                 reader.readAsDataURL(pdfBlob);
             });
         } catch (err) {
-            if (temp && temp.wrapper && temp.wrapper.parentNode) temp.wrapper.parentNode.removeChild(temp.wrapper);
             console.warn('[PDF Base64 Generation] Note fallback:', err);
         }
         return null;
