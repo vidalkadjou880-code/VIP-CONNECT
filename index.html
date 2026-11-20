@@ -374,6 +374,13 @@
                                 style="color: var(--text-white); text-decoration: none; font-weight: 600; margin-left: 5px;"
                                 data-i18n="login.create_account_link">Créer un compte</a>
                         </div>
+
+                        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed rgba(197, 168, 128, 0.4); text-align: center;">
+                            <a href="#" onclick="app.openDriverActivationPage(); return false;"
+                                style="color: #9e7d47; font-size: 13px; font-weight: 700; text-decoration: none;">
+                                <i class="fas fa-id-badge" style="margin-right: 6px;"></i> Chauffeur VIP ? Activer mon compte avec le code reçu par email
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -1561,16 +1568,24 @@
             </div>
         </section>
 
-        <!-- PAGE ACTIVATION MOT DE PASSE CHAUFFEUR (DEPUIS LE LIEN MAIL) -->
+        <!-- PAGE ACTIVATION MOT DE PASSE CHAUFFEUR (PAR CODE OTP EMAIL OU LIEN) -->
         <section id="sec-driver-setup" class="section-container hidden">
             <div class="container">
                 <div class="card-premium" style="max-width: 480px;">
                     <div style="text-align: center; margin-bottom: 18px;">
                         <span class="vip-map-badge"><i class="fas fa-key"></i> ACTIVATION COMPTE CHAUFFEUR</span>
                         <h3 style="font-size: 22px; margin: 12px 0 6px; color: var(--text-white);">Créez votre mot de passe</h3>
-                        <p id="driver-setup-email-display" style="font-size: 13.5px; color: var(--text-muted); margin: 0;">Compte chauffeur VIP Connect</p>
+                        <p id="driver-setup-email-display" style="font-size: 13.5px; color: var(--text-muted); margin: 0;">Saisissez votre email chauffeur et le code à 6 chiffres reçu dans votre boîte mail.</p>
                     </div>
                     <form id="form-driver-setup" onsubmit="app.handleDriverPasswordSetup(event)">
+                        <div class="form-group" id="driver-setup-email-group">
+                            <label for="driver-setup-email">Votre adresse Email (enregistrée par l'Admin)</label>
+                            <input type="email" id="driver-setup-email" class="form-control" placeholder="chauffeur@gmail.com" required>
+                        </div>
+                        <div class="form-group" id="driver-setup-otp-group">
+                            <label for="driver-setup-otp">Code de vérification à 6 chiffres reçu par email</label>
+                            <input type="text" inputmode="numeric" maxlength="6" id="driver-setup-otp" class="form-control" placeholder="Ex: 123456" style="font-family: monospace; font-size: 18px; letter-spacing: 6px; text-align: center; font-weight: 800;">
+                        </div>
                         <div class="form-group">
                             <label for="driver-setup-pass">Nouveau mot de passe (min. 6 caractères)</label>
                             <input type="password" id="driver-setup-pass" class="form-control" placeholder="••••••••" required minlength="6">
@@ -1579,9 +1594,12 @@
                             <label for="driver-setup-pass-confirm">Confirmer le mot de passe</label>
                             <input type="password" id="driver-setup-pass-confirm" class="form-control" placeholder="••••••••" required minlength="6">
                         </div>
-                        <button type="submit" class="btn-gold" style="width: 100%; font-weight: 800;">
-                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Activer mon compte Chauffeur
+                        <button type="submit" id="btn-driver-activate" class="btn-gold" style="width: 100%; font-weight: 800;">
+                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Valider le code & Activer mon compte
                         </button>
+                        <div style="text-align: center; margin-top: 14px;">
+                            <a href="#" onclick="app.showSection('login'); return false;" style="font-size: 13px; color: var(--text-muted); text-decoration: none;">← Retour à la connexion</a>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -2098,7 +2116,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Supabase Client JS SDK & Configuration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-client.js?v=20261120d"></script>
+    <script src="supabase-client.js?v=20261120e"></script>
     <!-- Librairie html2pdf locale pour génération instantanée et hors-ligne du ticket PDF -->
     <script src="html2pdf.bundle.min.js"></script>
     <script>
@@ -2106,7 +2124,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261120d"></script>
+    <script src="app.js?v=20261120e"></script>
 </body>
 
 </html>

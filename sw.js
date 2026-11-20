@@ -4,7 +4,7 @@
  * et les rappels de départ.
  */
 
-const CACHE_NAME = 'vip-connect-v16';
+const CACHE_NAME = 'vip-connect-v17';
 const CORE_ASSETS = [
     '/manifest.json',
     '/images/vip_connect_logo.png'

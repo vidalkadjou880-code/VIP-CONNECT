@@ -1098,6 +1098,10 @@ const app = {
             } catch (e) {}
         }
         if (driver) {
+            if (driver.status === 'suspendu') {
+                this.showModalAlert("Votre accès Chauffeur a été suspendu par l'administration VIP Connect. Contactez votre responsable.", "Accès Suspendu", "error");
+                return;
+            }
             this.state.currentDriver = driver;
             this.state.currentUser = {
                 firstname: driver.firstname,
@@ -4399,9 +4403,12 @@ const app = {
             return;
         }
         tbody.innerHTML = list.map(d => {
-            const badge = d.passwordSet
+            let badge = d.passwordSet
                 ? `<span class="badge badge-approved">Actif (Mot de passe créé)</span>`
                 : `<span class="badge badge-pending">En attente mot de passe</span>`;
+            if (d.status === 'suspendu') {
+                badge = `<span class="badge badge-rejected">Accès suspendu</span>`;
+            }
             return `
                 <tr>
                     <td><strong>${d.firstname} ${d.lastname}</strong></td>
@@ -4410,13 +4417,74 @@ const app = {
                     <td><strong style="color:#9e7d47;">${d.vehicleName || 'Changan VIP #1'}</strong></td>
                     <td>${badge}</td>
                     <td>
-                        <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;" onclick="app.resendDriverInviteEmail('${d.id}')">
-                            <i class="fas fa-envelope"></i> Renvoyer email
-                        </button>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;" onclick="app.resendDriverInviteEmail('${d.id}')" title="Envoyer le code d'activation par email">
+                                <i class="fas fa-envelope"></i> Email
+                            </button>
+                            <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;border-color:${d.status === 'suspendu' ? '#16a34a' : '#d97706'};color:${d.status === 'suspendu' ? '#16a34a' : '#d97706'};" onclick="app.toggleDriverStatus('${d.id}')">
+                                <i class="fas ${d.status === 'suspendu' ? 'fa-unlock' : 'fa-ban'}"></i> ${d.status === 'suspendu' ? 'Réactiver' : 'Suspendre'}
+                            </button>
+                            <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;border-color:#dc2626;color:#dc2626;" onclick="app.deleteDriverAccess('${d.id}')">
+                                <i class="fas fa-trash-alt"></i> Supprimer accès
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
         }).join('');
+    },
+
+    toggleDriverStatus: async function(driverId) {
+        const driver = (this.state.drivers || []).find(d => d.id === driverId);
+        if (!driver) return;
+        driver.status = driver.status === 'suspendu' ? 'actif' : 'suspendu';
+        localStorage.setItem('vip_drivers', JSON.stringify(this.state.drivers));
+        if (window.vipSupabase && typeof window.vipSupabase.saveDriver === 'function') {
+            await window.vipSupabase.saveDriver(driver);
+        }
+        this.renderDriversTable();
+        this.showToast(
+            driver.status === 'suspendu'
+                ? `Accès suspendu pour ${driver.firstname} ${driver.lastname}.`
+                : `Accès réactivé pour ${driver.firstname} ${driver.lastname}.`,
+            driver.status === 'suspendu' ? "warning" : "success"
+        );
+    },
+
+    deleteDriverAccess: function(driverId) {
+        const driver = (this.state.drivers || []).find(d => d.id === driverId);
+        if (!driver) return;
+        this.showModalConfirm(
+            `Voulez-vous vraiment supprimer définitivement l'accès Chauffeur de ${driver.firstname} ${driver.lastname} (${driver.email}) ?\n\nIl ne pourra plus se connecter à l'Espace Chauffeur.`,
+            "Supprimer l'accès Chauffeur",
+            async () => {
+                this.state.drivers = (this.state.drivers || []).filter(d => d.id !== driverId);
+                localStorage.setItem('vip_drivers', JSON.stringify(this.state.drivers));
+                if (window.vipSupabase && typeof window.vipSupabase.deleteDriver === 'function') {
+                    await window.vipSupabase.deleteDriver(driverId);
+                }
+                this.renderDriversTable();
+                this.showToast(`Accès chauffeur supprimé pour ${driver.firstname} ${driver.lastname}.`, "success");
+            },
+            null,
+            "Oui, supprimer l'accès",
+            "Annuler"
+        );
+    },
+
+    openDriverActivationPage: function() {
+        this._pendingDriverSetup = null;
+        const emailGroup = document.getElementById('driver-setup-email-group');
+        const otpGroup = document.getElementById('driver-setup-otp-group');
+        const emailInput = document.getElementById('driver-setup-email');
+        const otpInput = document.getElementById('driver-setup-otp');
+        if (emailGroup) emailGroup.classList.remove('hidden');
+        if (otpGroup) otpGroup.classList.remove('hidden');
+        if (emailInput) { emailInput.value = ''; emailInput.required = true; }
+        if (otpInput) { otpInput.value = ''; otpInput.required = true; }
+        const desc = document.getElementById('driver-setup-email-display');
+        if (desc) desc.innerText = "Saisissez votre email chauffeur et le code à 6 chiffres reçu dans votre boîte mail pour créer votre mot de passe.";
+        this.showSection('driver-setup');
     },
 
     // Détection du lien d'invitation chauffeur (?driver_invite=...&email=...)
@@ -4436,11 +4504,20 @@ const app = {
 
         const driver = (this.state.drivers || []).find(d => this.normalizeEmail(d.email) === email && (d.inviteToken === token || d.id === token));
         if (!driver) {
-            this.showModalAlert("Ce lien d'activation chauffeur est introuvable ou a déjà expiré. Demandez un nouveau lien à l'administrateur.", "Lien Invalide", "warning");
+            this.showModalAlert("Ce lien d'activation chauffeur est introuvable ou a été révoqué par l'administrateur.", "Lien Invalide", "warning");
             return;
         }
 
         this._pendingDriverSetup = driver;
+        const emailGroup = document.getElementById('driver-setup-email-group');
+        const otpGroup = document.getElementById('driver-setup-otp-group');
+        const emailInput = document.getElementById('driver-setup-email');
+        const otpInput = document.getElementById('driver-setup-otp');
+        if (emailGroup) emailGroup.classList.add('hidden');
+        if (otpGroup) otpGroup.classList.add('hidden');
+        if (emailInput) emailInput.required = false;
+        if (otpInput) otpInput.required = false;
+
         const emailEl = document.getElementById('driver-setup-email-display');
         if (emailEl) emailEl.innerText = `${driver.firstname} ${driver.lastname} (${driver.email})`;
         this.showSection('driver-setup');
@@ -4448,7 +4525,6 @@ const app = {
 
     handleDriverPasswordSetup: async function(event) {
         if (event) event.preventDefault();
-        if (!this._pendingDriverSetup) return;
 
         const p1 = document.getElementById('driver-setup-pass')?.value || '';
         const p2 = document.getElementById('driver-setup-pass-confirm')?.value || '';
@@ -4461,7 +4537,49 @@ const app = {
             return;
         }
 
-        const driver = this._pendingDriverSetup;
+        let driver = this._pendingDriverSetup;
+
+        // Si activation par code OTP reçu dans le mail
+        if (!driver) {
+            const email = this.normalizeEmail(document.getElementById('driver-setup-email')?.value || '');
+            const otp = (document.getElementById('driver-setup-otp')?.value || '').trim();
+            if (!email || otp.length !== 6) {
+                this.showModalAlert("Veuillez renseigner votre adresse email et le code à 6 chiffres reçu par email.", "Code Requis", "warning");
+                return;
+            }
+
+            // Rafraîchir les chauffeurs depuis Supabase
+            if (window.vipSupabase && typeof window.vipSupabase.fetchDrivers === 'function') {
+                const remoteDrivers = await window.vipSupabase.fetchDrivers();
+                if (Array.isArray(remoteDrivers) && remoteDrivers.length > 0) {
+                    this.state.drivers = remoteDrivers;
+                    localStorage.setItem('vip_drivers', JSON.stringify(remoteDrivers));
+                }
+            }
+
+            driver = (this.state.drivers || []).find(d => this.normalizeEmail(d.email) === email);
+            if (!driver) {
+                this.showModalAlert("Aucun compte chauffeur n'est enregistré avec cette adresse email. Demandez à l'administrateur de vous ajouter d'abord.", "Chauffeur Introuvable", "error");
+                return;
+            }
+            if (driver.status === 'suspendu') {
+                this.showModalAlert("Votre accès chauffeur est suspendu par l'administration.", "Accès Suspendu", "error");
+                return;
+            }
+
+            // Vérifier le code OTP à 6 chiffres auprès de Supabase Auth
+            if (window.vipSupabase && typeof window.vipSupabase.verifyAuthOtp === 'function') {
+                const btn = document.getElementById('btn-driver-activate');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification du code...'; }
+                const verRes = await window.vipSupabase.verifyAuthOtp(email, otp);
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle" style="margin-right: 8px;"></i> Valider le code & Activer mon compte'; }
+                if (!verRes.success) {
+                    this.showModalAlert("Le code à 6 chiffres saisi est incorrect ou a expiré. Vérifiez le dernier mail reçu.", "Code Invalide", "error");
+                    return;
+                }
+            }
+        }
+
         driver.password = p1;
         driver.passwordSet = true;
 

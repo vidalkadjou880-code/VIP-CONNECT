@@ -577,6 +577,17 @@ const vipSupabase = {
         }
     },
 
+    deleteDriver: async function (driverId) {
+        if (!this.client || !driverId) return { success: false };
+        try {
+            const { error } = await this.client.from('vip_drivers').delete().eq('id', driverId);
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
     // -------------------------------------------------------------
     // VOYAGES / HISTORIQUE CHAUFFEURS (vip_trips)
     // -------------------------------------------------------------
