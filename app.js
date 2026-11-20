@@ -66,6 +66,55 @@ const app = {
     },
 
     // -------------------------------------------------------------
+    // NORMALISATION & DÉDUPLICATION DES UTILISATEURS (EMAIL / TÉLÉPHONE UNIQUES)
+    // -------------------------------------------------------------
+    normalizePhone: function(phone) {
+        return String(phone || '').replace(/[^0-9]/g, '').replace(/^237/, '');
+    },
+
+    normalizeEmail: function(email) {
+        return String(email || '').trim().toLowerCase();
+    },
+
+    deduplicateUsers: function(usersList) {
+        const list = Array.isArray(usersList) ? usersList : [];
+        const unique = [];
+
+        const scoreUser = (u) => {
+            let s = 0;
+            if (u.kyc && u.kyc.status === 'approved') s += 4;
+            else if (u.kyc && u.kyc.status === 'pending') s += 2;
+            if (u.isAdmin || u.is_admin) s += 3;
+            if (u.email) s += 1;
+            if (String(u.phone || '').startsWith('+237')) s += 1;
+            return s;
+        };
+
+        for (const u of list) {
+            if (!u) continue;
+            const normPhone = this.normalizePhone(u.phone);
+            const normEmail = this.normalizeEmail(u.email);
+            if (!normPhone && !normEmail) continue;
+
+            const existingIdx = unique.findIndex(ex => {
+                const exPhone = this.normalizePhone(ex.phone);
+                const exEmail = this.normalizeEmail(ex.email);
+                return (normPhone && exPhone && normPhone === exPhone) ||
+                       (normEmail && exEmail && normEmail === exEmail);
+            });
+
+            if (existingIdx >= 0) {
+                if (scoreUser(u) > scoreUser(unique[existingIdx])) {
+                    unique[existingIdx] = Object.assign({}, unique[existingIdx], u);
+                }
+            } else {
+                unique.push(u);
+            }
+        }
+        return unique;
+    },
+
+    // -------------------------------------------------------------
     // GESTION DU RÔLE ADMINISTRATEUR
     // -------------------------------------------------------------
     isAdminUser: function(user) {
@@ -378,13 +427,14 @@ const app = {
             this.state.users = [];
         }
 
-        // S'assurer de la présence du Super Administrateur VIP Connect
+        // S'assurer de la présence du Super Administrateur VIP Connect (sans jamais créer de doublon)
+        this.state.users = this.deduplicateUsers(this.state.users);
         const hasAdmin = this.state.users.some(u => this.isAdminUser(u));
         if (!hasAdmin) {
             this.state.users.unshift({
                 firstname: "Vidal",
                 lastname: "Kadjou",
-                phone: "+237698346898",
+                phone: "698346898",
                 email: "vidalkadjou880@gmail.com",
                 password: "admin",
                 isAdmin: true,
@@ -481,20 +531,10 @@ const app = {
             let hasUpdates = false;
 
             if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
-                // Fusion intelligente entre utilisateurs distants et utilisateurs locaux
-                const userMap = new Map();
-                remoteUsers.forEach(u => {
-                    this.promoteIfAdmin(u);
-                    const cleanPhone = String(u.phone || '').replace(/[^0-9]/g, '');
-                    if (cleanPhone) userMap.set(cleanPhone, u);
-                });
-                (this.state.users || []).forEach(localU => {
-                    const cleanPhone = String(localU.phone || '').replace(/[^0-9]/g, '');
-                    if (cleanPhone && !userMap.has(cleanPhone)) {
-                        userMap.set(cleanPhone, localU);
-                    }
-                });
-                this.state.users = Array.from(userMap.values());
+                // Fusion intelligente sans doublon (par email normalisé OU téléphone normalisé sans +237)
+                remoteUsers.forEach(u => this.promoteIfAdmin(u));
+                (this.state.users || []).forEach(u => this.promoteIfAdmin(u));
+                this.state.users = this.deduplicateUsers([...remoteUsers, ...(this.state.users || [])]);
                 localStorage.setItem('vip_users', JSON.stringify(this.state.users));
                 hasUpdates = true;
 
@@ -1041,7 +1081,7 @@ const app = {
         }
     },
 
-    handleRegister: function(event) {
+    handleRegister: async function(event) {
         if (event) event.preventDefault();
         const firstnameEl = document.getElementById('reg-firstname');
         const lastnameEl = document.getElementById('reg-lastname');
@@ -1052,8 +1092,9 @@ const app = {
 
         const firstname = firstnameEl ? firstnameEl.value.trim() : '';
         const lastname = lastnameEl ? lastnameEl.value.trim() : '';
-        const email = emailEl ? emailEl.value.trim() : '';
-        const phone = phoneEl ? phoneEl.value.trim() : '';
+        const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+        const phoneRaw = phoneEl ? phoneEl.value.trim() : '';
+        const phone = this.normalizePhone(phoneRaw) || phoneRaw;
         const password = passwordEl ? passwordEl.value : '';
         const passwordConfirm = passwordConfirmEl ? passwordConfirmEl.value : '';
 
@@ -1073,11 +1114,32 @@ const app = {
             return;
         }
 
-        const phoneExists = this.state.users.some(u => u.phone === phone);
-        const emailExists = this.state.users.some(u => u.email === email);
+        // Vérifier en direct dans Supabase (si en ligne) pour empêcher tout doublon depuis un autre appareil
+        if (window.vipSupabase && typeof window.vipSupabase.fetchUsers === 'function') {
+            try {
+                const remoteUsers = await window.vipSupabase.fetchUsers();
+                if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+                    remoteUsers.forEach(u => this.promoteIfAdmin(u));
+                    this.state.users = this.deduplicateUsers([...remoteUsers, ...(this.state.users || [])]);
+                }
+            } catch (e) {
+                console.warn("Notice vérification doublon Supabase:", e);
+            }
+        }
 
-        if (phoneExists || emailExists) {
-            this.showModalAlert("Un compte existe déjà avec ce numéro de téléphone ou cette adresse email. Veuillez vous connecter.", "Compte Existant", "warning");
+        const normPhone = this.normalizePhone(phone);
+        const normEmail = this.normalizeEmail(email);
+
+        const emailExists = this.state.users.some(u => this.normalizeEmail(u.email) === normEmail);
+        const phoneExists = this.state.users.some(u => this.normalizePhone(u.phone) === normPhone);
+
+        if (emailExists) {
+            this.showModalAlert("Cette adresse email est déjà associée à un compte VIP Connect. Une même adresse email ne peut pas créer deux comptes. Veuillez vous connecter.", "Adresse Email Déjà Utilisée", "warning");
+            return;
+        }
+
+        if (phoneExists) {
+            this.showModalAlert("Ce numéro de téléphone est déjà associé à un compte VIP Connect. Veuillez vous connecter.", "Numéro Déjà Utilisé", "warning");
             return;
         }
 
@@ -1086,8 +1148,8 @@ const app = {
         const pendingUser = {
             firstname: firstname,
             lastname: lastname,
-            email: email,
-            phone: phone,
+            email: normEmail,
+            phone: normPhone || phone,
             password: password,
             isAdmin: isAdmin,
             is_admin: isAdmin,
@@ -1101,12 +1163,15 @@ const app = {
         };
 
         // 1. Enregistrement IMMÉDIAT du compte dans l'état local et dans Supabase (visible sans délai pour l'admin)
-        const existingIdx = this.state.users.findIndex(u => u.phone === phone || u.email === email);
+        const existingIdx = this.state.users.findIndex(u =>
+            this.normalizePhone(u.phone) === normPhone || this.normalizeEmail(u.email) === normEmail
+        );
         if (existingIdx >= 0) {
             this.state.users[existingIdx] = pendingUser;
         } else {
             this.state.users.push(pendingUser);
         }
+        this.state.users = this.deduplicateUsers(this.state.users);
         this.saveUsers();
         if (window.vipSupabase) {
             window.vipSupabase.saveUser(pendingUser).catch(console.warn);

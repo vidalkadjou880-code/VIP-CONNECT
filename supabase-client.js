@@ -99,11 +99,45 @@ const vipSupabase = {
         }
 
         try {
+            const normEmail = String(user.email || '').trim().toLowerCase();
+            const normPhone = String(user.phone || '').replace(/[^0-9]/g, '').replace(/^237/, '');
+            const finalPhone = normPhone || String(user.phone || '').trim();
+
+            // Si un compte existe déjà avec la même adresse email (mais un autre format de téléphone), on met à jour celui-là au lieu de créer un doublon
+            if (normEmail) {
+                const { data: existingByEmail } = await this.client
+                    .from('vip_users')
+                    .select('phone')
+                    .ilike('email', normEmail)
+                    .limit(1);
+
+                if (existingByEmail && existingByEmail.length > 0 && existingByEmail[0].phone !== finalPhone) {
+                    const existingPhone = existingByEmail[0].phone;
+                    const { data, error } = await this.client
+                        .from('vip_users')
+                        .update({
+                            firstname: user.firstname || '',
+                            lastname: user.lastname || '',
+                            email: normEmail,
+                            password: user.password || '',
+                            is_admin: !!user.isAdmin,
+                            kyc: user.kyc || { status: 'none' },
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('phone', existingPhone);
+                    if (error) {
+                        console.warn('Erreur update saveUser Supabase:', error.message);
+                        return { success: false, error: error.message };
+                    }
+                    return { success: true, data };
+                }
+            }
+
             const payload = {
-                phone: user.phone,
+                phone: finalPhone,
                 firstname: user.firstname || '',
                 lastname: user.lastname || '',
-                email: user.email || '',
+                email: normEmail,
                 password: user.password || '',
                 is_admin: !!user.isAdmin,
                 kyc: user.kyc || { status: 'none' },
