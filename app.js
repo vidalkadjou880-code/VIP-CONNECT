@@ -4330,26 +4330,7 @@ const app = {
         const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
         const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(driver.inviteToken || driver.id)}&email=${encodeURIComponent(email)}`;
 
-        let sentBySupabase = false;
-        let sentByBrevo = false;
-        let lastErr = '';
-
-        // 1. Envoi réel via Supabase Auth (arrive directement dans la boîte mail du chauffeur)
-        if (window.vipSupabase && typeof window.vipSupabase.sendDriverInviteEmailViaSupabase === 'function') {
-            const supaRes = await window.vipSupabase.sendDriverInviteEmailViaSupabase(email, setupUrl, {
-                firstname: driver.firstname,
-                lastname: driver.lastname,
-                phone: driver.phone,
-                vehicleName: driver.vehicleName
-            });
-            if (supaRes && supaRes.success) {
-                sentBySupabase = true;
-            } else if (supaRes && supaRes.error) {
-                lastErr = supaRes.error;
-            }
-        }
-
-        // 2. Envoi complémentaire via Brevo (si BREVO_API_KEY est configurée sur Vercel)
+        // Envoi uniquement du vrai e-mail VIP Connect contenant le bouton/lien cliquable (sans code OTP)
         try {
             const resp = await fetch('/api/notifications/send-driver-invite', {
                 method: 'POST',
@@ -4368,22 +4349,26 @@ const app = {
             });
             const data = await resp.json();
             if (data.success && !data.simulated) {
-                sentByBrevo = true;
+                this.showModalAlert(
+                    `✅ L'email avec le lien d'activation a été envoyé directement à ${driver.firstname} ${driver.lastname} (${email}).\n\nIl lui suffit de cliquer sur le bouton « Créer mon mot de passe Chauffeur » dans le mail reçu.`,
+                    "Email avec Lien Envoyé ✓",
+                    "success"
+                );
+            } else if (data.simulated) {
+                this.showModalAlert(
+                    `Le chauffeur ${driver.firstname} ${driver.lastname} est enregistré, mais la clé BREVO_API_KEY n'est pas encore configurée sur Vercel pour envoyer l'email avec le lien.\n\nAjoutez BREVO_API_KEY dans Vercel → Settings → Environment Variables, puis cliquez sur « Email » pour envoyer le lien.`,
+                    "Clé Email Brevo Requise sur Vercel",
+                    "warning"
+                );
+            } else {
+                this.showModalAlert(
+                    `Erreur lors de l'envoi de l'email : ${data.error || 'Vérifiez votre clé BREVO_API_KEY sur Vercel.'}`,
+                    "Erreur Envoi Email",
+                    "error"
+                );
             }
-        } catch (err) {}
-
-        if (sentBySupabase || sentByBrevo) {
-            this.showModalAlert(
-                `Un email d'activation a bien été envoyé directement dans la boîte mail de ${driver.firstname} ${driver.lastname} (${email}).\n\nIl lui suffit d'ouvrir le mail (vérifier aussi les spams) et de cliquer sur le lien pour créer son mot de passe et accéder à son Espace Chauffeur.`,
-                "Email Chauffeur Envoyé ✓",
-                "success"
-            );
-        } else {
-            this.showModalAlert(
-                `Le chauffeur ${driver.firstname} ${driver.lastname} a été enregistré, mais l'envoi automatique de l'email a rencontré une limite (${lastErr || 'vérifiez la configuration email'}).\n\nCliquez sur « Renvoyer email » dans quelques instants.`,
-                "Notice Envoi Email",
-                "warning"
-            );
+        } catch (err) {
+            this.showModalAlert("Impossible de joindre le serveur d'envoi d'email.", "Erreur Réseau", "error");
         }
     },
 
