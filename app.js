@@ -47,6 +47,7 @@ const app = {
         this.initDialogKeyListeners();
         this.initServiceWorkerAndNotifications();
         this.startDepartureReminderEngine();
+        this.initMaps();
         
         // Rafraîchir les horaires dynamiques régulièrement
         setInterval(() => {
@@ -666,11 +667,14 @@ const app = {
         this.translatePage(true);
         
         // Action spécifique par section
-        if (sectionId === 'dashboard') {
+        if (sectionId === 'home-login') {
+            setTimeout(() => this.initHomeMap(), 150);
+        } else if (sectionId === 'dashboard') {
             this.updateDynamicSchedules();
             this.updateDashboardKycUI();
             this.updateNotificationUi();
             this.renderUserReservations();
+            setTimeout(() => this.initDashboardLiveMap(), 180);
         } else if (sectionId === 'admin') {
             this.loadAdminData();
         } else if (sectionId === 'kyc-verification') {
@@ -4140,6 +4144,221 @@ const app = {
 
         this.showTicketModal(res.id, res.txId || 'TX-VIP', details);
         await this.sendTicketPdfByEmail(res, details);
+    },
+
+    // -------------------------------------------------------------
+    // CARTE INTERACTIVE DES AGENCES & SUIVI GPS TEMPS RÉEL (LEAFLET)
+    // -------------------------------------------------------------
+    _homeMap: null,
+    _liveMap: null,
+    _vehicleMarker: null,
+    _userMarker: null,
+    _liveMapInterval: null,
+
+    AGENCIES_COORDS: {
+        douala: {
+            lat: 4.0910,
+            lng: 9.7405,
+            name: 'Douala — Bonamoussadi (KEVAS SARL)',
+            gmaps: 'https://www.google.com/maps/search/?api=1&query=Bonamoussadi+Douala+Cameroun'
+        },
+        yaounde: {
+            lat: 3.8825,
+            lng: 11.5245,
+            name: 'Yaoundé — Etoa-Meki (SOA TOUR)',
+            gmaps: 'https://www.google.com/maps/search/?api=1&query=Etoa+Meki+Yaounde+Cameroun'
+        }
+    },
+
+    initMaps: function() {
+        setTimeout(() => {
+            if (this.state.activeSection === 'home-login') {
+                this.initHomeMap();
+            } else if (this.state.activeSection === 'dashboard') {
+                this.initDashboardLiveMap();
+            }
+        }, 350);
+    },
+
+    createAgencyMarkerIcon: function(label) {
+        return L.divIcon({
+            className: 'vip-agency-pin',
+            html: `<div style="background:#111118;color:#c5a880;border:2px solid #c5a880;padding:4px 10px;border-radius:20px;font-weight:800;font-size:11px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.35);">★ ${label}</div>`,
+            iconSize: [120, 28],
+            iconAnchor: [60, 14]
+        });
+    },
+
+    createVehicleMarkerIcon: function() {
+        return L.divIcon({
+            className: 'vip-vehicle-pin',
+            html: `<div style="background:linear-gradient(135deg,#f6e7c1,#c5a880);color:#111118;border:2px solid #111118;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 18px rgba(197,168,128,0.85);"><i class="fas fa-car"></i></div>`,
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+    },
+
+    setupBaseMapWithAgencies: function(containerId) {
+        if (typeof L === 'undefined') return null;
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+
+        const { douala, yaounde } = this.AGENCIES_COORDS;
+        const map = L.map(containerId, { scrollWheelZoom: false }).setView([3.98, 10.63], 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // Marqueur Douala (Bonamoussadi / KEVAS SARL)
+        L.marker([douala.lat, douala.lng], { icon: this.createAgencyMarkerIcon('Douala • KEVAS') })
+            .addTo(map)
+            .bindPopup(`<strong>${douala.name}</strong><br>Départs : 04h30 & 15h00<br><a href="${douala.gmaps}" target="_blank" rel="noopener noreferrer" style="color:#9e7d47;font-weight:700;">Ouvrir dans Google Maps ↗</a>`);
+
+        // Marqueur Yaoundé (Etoa-Meki / SOA TOUR)
+        L.marker([yaounde.lat, yaounde.lng], { icon: this.createAgencyMarkerIcon('Yaoundé • SOA TOUR') })
+            .addTo(map)
+            .bindPopup(`<strong>${yaounde.name}</strong><br>Départs : 10h00 & 15h00<br><a href="${yaounde.gmaps}" target="_blank" rel="noopener noreferrer" style="color:#9e7d47;font-weight:700;">Ouvrir dans Google Maps ↗</a>`);
+
+        // Tracé de la liaison Douala ↔ Yaoundé (via Edéa / Boumnyebel)
+        const routeLine = [
+            [douala.lat, douala.lng],
+            [3.8000, 10.1300], // Edéa
+            [3.8900, 10.8500], // Boumnyebel
+            [yaounde.lat, yaounde.lng]
+        ];
+        L.polyline(routeLine, { color: '#c5a880', weight: 4, opacity: 0.85, dashArray: '8, 8' }).addTo(map);
+
+        map.fitBounds([[douala.lat, douala.lng], [yaounde.lat, yaounde.lng]], { padding: [45, 45] });
+        return map;
+    },
+
+    initHomeMap: function() {
+        const el = document.getElementById('home-agencies-map');
+        if (!el || typeof L === 'undefined') return;
+        if (!this._homeMap) {
+            this._homeMap = this.setupBaseMapWithAgencies('home-agencies-map');
+        } else {
+            this._homeMap.invalidateSize();
+        }
+    },
+
+    initDashboardLiveMap: function() {
+        const el = document.getElementById('dashboard-live-map');
+        if (!el || typeof L === 'undefined') return;
+
+        // Afficher le bouton Mode Chauffeur GPS pour les administrateurs ou chauffeurs
+        const driverBtn = document.getElementById('btn-open-driver-gps');
+        if (driverBtn) {
+            if (this.isAdminUser(this.state.currentUser)) {
+                driverBtn.classList.remove('hidden');
+            } else {
+                driverBtn.classList.add('hidden');
+            }
+        }
+
+        if (!this._liveMap) {
+            this._liveMap = this.setupBaseMapWithAgencies('dashboard-live-map');
+            if (this._liveMap) {
+                const { douala } = this.AGENCIES_COORDS;
+                this._vehicleMarker = L.marker([douala.lat, douala.lng], {
+                    icon: this.createVehicleMarkerIcon(),
+                    zIndexOffset: 1000
+                }).addTo(this._liveMap)
+                  .bindPopup('<strong>Changan VIP #1</strong><br>En attente à l\'agence.');
+            }
+        } else {
+            this._liveMap.invalidateSize();
+        }
+
+        this.refreshLiveVehicleMap(false);
+        if (this._liveMapInterval) clearInterval(this._liveMapInterval);
+        this._liveMapInterval = setInterval(() => {
+            if (this.state.activeSection === 'dashboard') {
+                this.refreshLiveVehicleMap(false);
+            }
+        }, 10000);
+    },
+
+    refreshLiveVehicleMap: async function(manual = false) {
+        if (!this._liveMap || !this._vehicleMarker) return;
+        let loc = null;
+
+        if (window.vipSupabase && typeof window.vipSupabase.fetchVehicleLocation === 'function') {
+            loc = await window.vipSupabase.fetchVehicleLocation(1);
+        }
+        if (!loc) {
+            try {
+                const cached = localStorage.getItem('vip_live_vehicle_1');
+                if (cached) loc = JSON.parse(cached);
+            } catch (e) {}
+        }
+
+        const statusEl = document.getElementById('live-gps-status-text');
+        if (loc && loc.lat && loc.lng) {
+            this._vehicleMarker.setLatLng([Number(loc.lat), Number(loc.lng)]);
+            const statusLabels = {
+                embarquement: 'Embarquement en cours à l\'agence',
+                en_route: 'En route vers la destination',
+                arrive: 'Arrivé à destination',
+                en_attente: 'En attente du prochain départ'
+            };
+            const label = statusLabels[loc.status] || 'Suivi GPS actif';
+            const speed = Number(loc.speed_kmh || loc.speedKmh || 0);
+            const updatedStr = loc.updated_at ? new Date(loc.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+
+            this._vehicleMarker.setPopupContent(
+                `<strong>${loc.vehicle_name || 'Changan VIP #1'}</strong><br>` +
+                `Trajet : ${loc.route || 'Douala - Yaoundé'}<br>` +
+                `Statut : ${label}${speed > 0 ? ` (${speed} km/h)` : ''}` +
+                (updatedStr ? `<br><small>Mis à jour à ${updatedStr}</small>` : '')
+            );
+
+            if (statusEl) {
+                statusEl.innerHTML = `<strong>${loc.vehicle_name || 'Changan VIP #1'}</strong> &bull; ${label}${speed > 0 ? ` (${speed} km/h)` : ''}${updatedStr ? ` &bull; MàJ ${updatedStr}` : ''}`;
+            }
+
+            if (manual) {
+                this._liveMap.setView([Number(loc.lat), Number(loc.lng)], 12, { animate: true });
+                this._vehicleMarker.openPopup();
+                this.showToast("Position GPS de la navette actualisée !", "success");
+            }
+        } else if (manual) {
+            this.showToast("La navette est actuellement stationnée à l'agence.", "info");
+        }
+    },
+
+    centerMapOnUser: function() {
+        if (!this._liveMap) return;
+        if (!('geolocation' in navigator)) {
+            this.showToast("La géolocalisation n'est pas supportée par votre appareil.", "warning");
+            return;
+        }
+        this.showToast("Recherche de votre position GPS...", "info");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (this._userMarker) {
+                    this._userMarker.setLatLng([lat, lng]);
+                } else {
+                    this._userMarker = L.circleMarker([lat, lng], {
+                        radius: 9,
+                        fillColor: '#2563eb',
+                        color: '#ffffff',
+                        weight: 3,
+                        fillOpacity: 1
+                    }).addTo(this._liveMap).bindPopup('<strong>Votre position actuelle</strong>');
+                }
+                this._liveMap.setView([lat, lng], 13, { animate: true });
+                this._userMarker.openPopup();
+            },
+            () => {
+                this.showToast("Veuillez autoriser la localisation GPS sur votre navigateur.", "warning");
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     },
 
     // -------------------------------------------------------------

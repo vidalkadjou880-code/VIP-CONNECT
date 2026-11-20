@@ -28,7 +28,7 @@ const vipSupabase = {
     isConnected: false,
 
     // Tester la connectivité avec le serveur Supabase
-    checkConnection: async function() {
+    checkConnection: async function () {
         if (!this.client) return false;
         try {
             const { data, error } = await this.client.from('vip_users').select('count', { count: 'exact', head: true });
@@ -48,7 +48,7 @@ const vipSupabase = {
     },
 
     // Statut de connexion Supabase (badge masqué en production pour l'expérience client)
-    updateStatusBadge: function(connected) {
+    updateStatusBadge: function (connected) {
         const existingBadge = document.getElementById('supabase-status-badge');
         if (existingBadge) {
             existingBadge.remove();
@@ -64,7 +64,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // USERS (vip_users)
     // -------------------------------------------------------------
-    fetchUsers: async function() {
+    fetchUsers: async function () {
         if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_users').select('*');
@@ -90,7 +90,7 @@ const vipSupabase = {
         }
     },
 
-    saveUser: async function(user) {
+    saveUser: async function (user) {
         if (!this.client || !user || !user.phone) return { success: false, error: "Utilisateur ou téléphone manquant" };
         // Ne jamais sauvegarder de faux comptes de test
         const cleanPhone = String(user.phone || '').replace(/[^0-9]/g, '');
@@ -159,7 +159,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // RESERVATIONS (vip_reservations)
     // -------------------------------------------------------------
-    fetchReservations: async function() {
+    fetchReservations: async function () {
         if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_reservations').select('*');
@@ -187,7 +187,7 @@ const vipSupabase = {
         }
     },
 
-    saveReservation: async function(reservation) {
+    saveReservation: async function (reservation) {
         if (!this.client || !reservation || !reservation.id) return;
         // Ne jamais sauvegarder les réservations de test
         if (['VIP-RES-901', 'VIP-RES-902'].includes(reservation.id)) return;
@@ -215,7 +215,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // PAYMENTS (vip_payments)
     // -------------------------------------------------------------
-    fetchPayments: async function() {
+    fetchPayments: async function () {
         if (!this.client) return [];
         try {
             const { data, error } = await this.client.from('vip_payments').select('*');
@@ -238,7 +238,7 @@ const vipSupabase = {
         }
     },
 
-    savePayment: async function(payment) {
+    savePayment: async function (payment) {
         if (!this.client || !payment || !payment.txId) return;
         try {
             const payload = {
@@ -260,7 +260,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // REVIEWS (vip_reviews)
     // -------------------------------------------------------------
-    fetchReviews: async function() {
+    fetchReviews: async function () {
         if (!this.client) return null;
         try {
             const { data, error } = await this.client.from('vip_reviews').select('*').order('id', { ascending: false });
@@ -282,7 +282,7 @@ const vipSupabase = {
         }
     },
 
-    saveReview: async function(review) {
+    saveReview: async function (review) {
         if (!this.client || !review || !review.id) return;
         try {
             const payload = {
@@ -303,7 +303,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // SUPABASE STORAGE (KYC Documents Réels)
     // -------------------------------------------------------------
-    uploadKycDocument: async function(phone, docType, dataUrlOrFile) {
+    uploadKycDocument: async function (phone, docType, dataUrlOrFile) {
         if (!this.client || !dataUrlOrFile) return null;
         try {
             let blob;
@@ -357,7 +357,7 @@ const vipSupabase = {
     // -------------------------------------------------------------
     // SUPABASE AUTH (Envoi d'email avec code OTP à 6 chiffres)
     // -------------------------------------------------------------
-    sendAuthOtp: async function(email, metadata = {}) {
+    sendAuthOtp: async function (email, metadata = {}) {
         if (!this.client || !email) return { success: false, error: "Email requis ou Supabase indisponible" };
         try {
             const currentOrigin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://vip-connect.vercel.app';
@@ -381,7 +381,7 @@ const vipSupabase = {
         }
     },
 
-    verifyAuthOtp: async function(email, token) {
+    verifyAuthOtp: async function (email, token) {
         if (!this.client) return { success: false, error: "Client non disponible" };
         try {
             console.log(`Tentative de validation OTP pour ${email} avec le code ${token}...`);
@@ -418,7 +418,7 @@ const vipSupabase = {
         }
     },
 
-    sendPasswordResetOtp: async function(email) {
+    sendPasswordResetOtp: async function (email) {
         if (!this.client || !email) return { success: false, error: "Email requis" };
         try {
             const currentOrigin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'http://10.1.1.11:3000';
@@ -433,7 +433,7 @@ const vipSupabase = {
         }
     },
 
-    verifyPasswordResetOtp: async function(email, token, newPassword) {
+    verifyPasswordResetOtp: async function (email, token, newPassword) {
         if (!this.client) return { success: false, error: "Client non disponible" };
         try {
             let verifyRes = await this.client.auth.verifyOtp({
@@ -460,6 +460,51 @@ const vipSupabase = {
             }
 
             return { success: true, user: updateData.user };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    // -------------------------------------------------------------
+    // SUIVI GPS TEMPS RÉEL DES VÉHICULES (vip_vehicle_locations)
+    // -------------------------------------------------------------
+    fetchVehicleLocation: async function (vehicleId = 1) {
+        if (!this.client) return null;
+        try {
+            const { data, error } = await this.client
+                .from('vip_vehicle_locations')
+                .select('*')
+                .eq('vehicle_id', vehicleId)
+                .maybeSingle();
+            if (error) {
+                console.warn('[GPS] Table vip_vehicle_locations indisponible:', error.message);
+                return null;
+            }
+            return data || null;
+        } catch (err) {
+            return null;
+        }
+    },
+
+    updateVehicleLocation: async function (loc) {
+        if (!this.client || !loc) return { success: false, error: 'Supabase indisponible' };
+        try {
+            const payload = {
+                vehicle_id: Number(loc.vehicleId || loc.vehicle_id || 1),
+                vehicle_name: loc.vehicleName || loc.vehicle_name || 'Changan VIP #1',
+                route: loc.route || 'Douala - Yaoundé',
+                lat: Number(loc.lat),
+                lng: Number(loc.lng),
+                speed_kmh: Number(loc.speedKmh || loc.speed_kmh || 0),
+                heading: Number(loc.heading || 0),
+                status: loc.status || 'en_route',
+                updated_at: new Date().toISOString()
+            };
+            const { data, error } = await this.client
+                .from('vip_vehicle_locations')
+                .upsert(payload, { onConflict: 'vehicle_id' });
+            if (error) return { success: false, error: error.message };
+            return { success: true, data };
         } catch (err) {
             return { success: false, error: err.message };
         }

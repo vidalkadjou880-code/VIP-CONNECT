@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP Connect — GPS Chauffeur en Direct</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5; color: #111118; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .card {
+      background: #fff; border: 2px solid #c5a880; border-radius: 18px; max-width: 440px; width: 100%;
+      padding: 26px 22px; box-shadow: 0 15px 40px rgba(0,0,0,0.08); text-align: center;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px;
+      background: rgba(197,168,128,0.16); color: #8e7148; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    }
+    h1 { font-size: 22px; margin: 12px 0 6px; }
+    p.sub { font-size: 13px; color: #64748b; margin: 0 0 18px; }
+    .field { text-align: left; margin-bottom: 14px; }
+    label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+    select {
+      width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid #cbd5e0; font-size: 14px; background: #fff;
+    }
+    .btn {
+      width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 15px; font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-start { background: linear-gradient(135deg, #f6e7c1, #c5a880); color: #111118; }
+    .btn-stop { background: #ef4444; color: #fff; }
+    .status-box {
+      margin-top: 18px; padding: 14px; border-radius: 12px; background: #faf8f5; border: 1px solid #e2e8f0;
+      font-size: 13px; text-align: left; line-height: 1.6;
+    }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; margin-right: 6px; }
+    .dot.live { background: #16a34a; box-shadow: 0 0 10px #16a34a; }
+    a.back { display: inline-block; margin-top: 16px; color: #8e7148; font-size: 13px; font-weight: 600; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><i class="fas fa-satellite-dish"></i> Espace Chauffeur VIP Connect</div>
+    <h1>Partage GPS en Direct</h1>
+    <p class="sub">Activez le suivi avant le départ pour que les passagers et l'agence voient votre Changan en temps réel sur la carte.</p>
+
+    <div class="field">
+      <label for="driver-route">Itinéraire du voyage</label>
+      <select id="driver-route">
+        <option value="Douala - Yaoundé">Douala (Bonamoussadi) → Yaoundé (Etoa-Meki)</option>
+        <option value="Yaoundé - Douala">Yaoundé (Etoa-Meki) → Douala (Bonamoussadi)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="driver-status">Statut actuel</label>
+      <select id="driver-status">
+        <option value="embarquement">Embarquement à l'agence</option>
+        <option value="en_route" selected>En route vers la destination</option>
+        <option value="arrive">Arrivé à destination</option>
+      </select>
+    </div>
+
+    <button id="btn-toggle-gps" class="btn btn-start" onclick="toggleTracking()">
+      <i class="fas fa-location-arrow"></i> Démarrer le suivi GPS en direct
+    </button>
+
+    <div class="status-box">
+      <div><span id="gps-dot" class="dot"></span> <strong id="gps-state">Suivi inactif</strong></div>
+      <div id="gps-coords" style="font-family: monospace; font-size: 12px; color: #475569; margin-top: 4px;">Position : --</div>
+      <div id="gps-last" style="font-size: 12px; color: #64748b;">Dernier envoi : jamais</div>
+    </div>
+
+    <a href="/" class="back"><i class="fas fa-arrow-left"></i> Retour au site VIP Connect</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js?v=20261120b"></script>
+  <script>
+    let watchId = null;
+    let lastSentAt = 0;
+
+    async function sendPosition(pos) {
+      const now = Date.now();
+      if (now - lastSentAt < 6000) return; // Maximum 1 envoi toutes les 6 secondes
+      lastSentAt = now;
+
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const speedKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+      const route = document.getElementById('driver-route').value;
+      const status = document.getElementById('driver-status').value;
+
+      document.getElementById('gps-coords').innerText = `Position : ${lat.toFixed(5)}, ${lng.toFixed(5)} (${speedKmh} km/h)`;
+
+      const locData = {
+        vehicleId: 1,
+        vehicleName: 'Changan VIP #1',
+        route,
+        lat,
+        lng,
+        speedKmh,
+        status
+      };
+
+      // Sauvegarde locale + Supabase
+      try { localStorage.setItem('vip_live_vehicle_1', JSON.stringify({ ...locData, updated_at: new Date().toISOString() })); } catch (e) {}
+
+      if (window.vipSupabase) {
+        const res = await window.vipSupabase.updateVehicleLocation(locData);
+        const timeStr = new Date().toLocaleTimeString('fr-FR');
+        if (res.success) {
+          document.getElementById('gps-last').innerText = `✅ Envoyé en direct à ${timeStr}`;
+        } else {
+          document.getElementById('gps-last').innerText = `⚠️ Sauvé localement (${res.error})`;
+        }
+      }
+    }
+
+    function toggleTracking() {
+      const btn = document.getElementById('btn-toggle-gps');
+      const dot = document.getElementById('gps-dot');
+      const stateEl = document.getElementById('gps-state');
+
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        btn.className = 'btn btn-start';
+        btn.innerHTML = '<i class="fas fa-location-arrow"></i> Démarrer le suivi GPS en direct';
+        dot.classList.remove('live');
+        stateEl.innerText = 'Suivi arrêté';
+        return;
+      }
+
+      if (!('geolocation' in navigator)) {
+        alert("La géolocalisation GPS n'est pas disponible sur cet appareil.");
+        return;
+      }
+
+      btn.className = 'btn btn-stop';
+      btn.innerHTML = '<i class="fas fa-stop-circle"></i> Arrêter le partage GPS';
+      dot.classList.add('live');
+      stateEl.innerText = 'Suivi GPS actif en direct';
+
+      watchId = navigator.geolocation.watchPosition(
+        sendPosition,
+        (err) => {
+          document.getElementById('gps-last').innerText = 'Erreur GPS : ' + err.message;
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      );
+    }
+  </script>
+</body>
+</html>

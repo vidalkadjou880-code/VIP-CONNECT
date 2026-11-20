@@ -11,9 +11,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261118d">
+    <link rel="stylesheet" href="style.css?v=20261120b">
     <!-- Icones FontAwesome pour un rendu élégant -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Carte interactive Leaflet (OpenStreetMap - 100% gratuit) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
     <!-- Configuration PWA & Notifications Smartphone -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#c5a880">
@@ -127,6 +129,26 @@
                                     active et le principal centre d'affaires du Cameroun.</p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Carte Interactive des Agences & Trajet GPS -->
+                    <div class="vip-map-card" style="margin-top: 36px;">
+                        <div class="vip-map-header">
+                            <div>
+                                <span class="vip-map-badge"><i class="fas fa-map-location-dot"></i> LOCALISATION & AGENCES</span>
+                                <h3>Nos Points de Départ & d'Arrivée</h3>
+                                <p>Visualisez nos agences partenaires et lancez votre itinéraire GPS en un clic.</p>
+                            </div>
+                            <div class="vip-map-actions">
+                                <a href="https://www.google.com/maps/search/?api=1&query=Bonamoussadi+Douala+Cameroun" target="_blank" rel="noopener noreferrer" class="btn-outline vip-gps-btn">
+                                    <i class="fas fa-location-dot" style="color: #9e7d47;"></i> Douala : Bonamoussadi (KEVAS SARL)
+                                </a>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Etoa+Meki+Yaounde+Cameroun" target="_blank" rel="noopener noreferrer" class="btn-outline vip-gps-btn">
+                                    <i class="fas fa-location-dot" style="color: #9e7d47;"></i> Yaoundé : Etoa-Meki (SOA TOUR)
+                                </a>
+                            </div>
+                        </div>
+                        <div id="home-agencies-map" class="vip-leaflet-map"></div>
                     </div>
                 </div>
             </div>
@@ -944,6 +966,33 @@
 
                 </div>
                 
+                <!-- Section Suivi GPS en Direct du Véhicule & Agences -->
+                <div class="vip-map-card" style="margin-top: 32px;">
+                    <div class="vip-map-header">
+                        <div>
+                            <span class="vip-map-badge vip-map-badge-live"><span class="live-pulse-dot"></span> SUIVI GPS EN DIRECT</span>
+                            <h3>Localisation de la Navette Changan</h3>
+                            <p id="live-gps-status-text">Position de la navette VIP et agences d'embarquement (actualisée toutes les 10s).</p>
+                        </div>
+                        <div class="vip-map-actions">
+                            <button type="button" class="btn-outline vip-gps-btn" onclick="app.refreshLiveVehicleMap(true)">
+                                <i class="fas fa-sync-alt"></i> Actualiser GPS
+                            </button>
+                            <button type="button" class="btn-outline vip-gps-btn" onclick="app.centerMapOnUser()">
+                                <i class="fas fa-crosshairs"></i> Ma position
+                            </button>
+                            <a href="chauffeur-gps.html" target="_blank" class="btn-gold vip-gps-btn" id="btn-open-driver-gps" style="text-decoration: none;">
+                                <i class="fas fa-steering-wheel"></i> Mode Chauffeur GPS
+                            </a>
+                        </div>
+                    </div>
+                    <div id="dashboard-live-map" class="vip-leaflet-map"></div>
+                    <div class="vip-map-footer">
+                        <span><strong>Douala :</strong> Bonamoussadi / KEVAS SARL &bull; <a href="https://www.google.com/maps/search/?api=1&query=Bonamoussadi+Douala+Cameroun" target="_blank" rel="noopener noreferrer">Itinéraire GPS ↗</a></span>
+                        <span><strong>Yaoundé :</strong> Etoa-Meki / SOA TOUR &bull; <a href="https://www.google.com/maps/search/?api=1&query=Etoa+Meki+Yaounde+Cameroun" target="_blank" rel="noopener noreferrer">Itinéraire GPS ↗</a></span>
+                    </div>
+                </div>
+
                 <!-- Section Mes Réservations & Billets PDF (Historique du Voyageur) -->
                 <div class="user-reservations-panel" style="margin-top: 40px; background: #ffffff; border: 1px solid rgba(197, 168, 128, 0.35); border-radius: 16px; padding: 25px 30px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(197, 168, 128, 0.15); padding-bottom: 15px;">
@@ -1781,9 +1830,11 @@
     </footer>
 
     <!-- Script logique -->
+    <!-- Librairie Leaflet JS (Carte interactive & Suivi GPS) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Supabase Client JS SDK & Configuration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-client.js?v=20261120"></script>
+    <script src="supabase-client.js?v=20261120b"></script>
     <!-- Librairie html2pdf locale pour génération instantanée et hors-ligne du ticket PDF -->
     <script src="html2pdf.bundle.min.js"></script>
     <script>
@@ -1791,7 +1842,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261120"></script>
+    <script src="app.js?v=20261120b"></script>
 </body>
 
 </html>

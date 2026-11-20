@@ -3419,6 +3419,127 @@ footer {
     }
 }
 
+/* ==========================================================================
+   CARTE INTERACTIVE AGENCES & SUIVI GPS TEMPS RÉEL (LEAFLET)
+   ========================================================================== */
+.vip-map-card {
+    background: #ffffff;
+    border: 1px solid rgba(197, 168, 128, 0.4);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.vip-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.vip-map-header h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111118;
+    margin: 6px 0 4px 0;
+}
+
+.vip-map-header p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+.vip-map-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(197, 168, 128, 0.16);
+    border: 1px solid rgba(197, 168, 128, 0.45);
+    color: #8e7148;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.vip-map-badge-live {
+    background: rgba(22, 163, 74, 0.12);
+    border-color: rgba(22, 163, 74, 0.4);
+    color: #15803d;
+}
+
+.live-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+    display: inline-block;
+    animation: kycPulse 1.6s infinite ease-in-out;
+}
+
+.vip-map-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.vip-gps-btn {
+    width: auto !important;
+    min-height: 36px !important;
+    padding: 7px 13px !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.vip-leaflet-map {
+    width: 100%;
+    height: 360px;
+    border-radius: 12px;
+    border: 1px solid rgba(197, 168, 128, 0.35);
+    overflow: hidden;
+    z-index: 1;
+}
+
+.vip-map-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12.5px;
+    color: #475569;
+}
+
+.vip-map-footer a {
+    color: #9e7d47;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.vip-map-footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .vip-map-card {
+        padding: 16px 12px;
+    }
+    .vip-leaflet-map {
+        height: 290px;
+    }
+}
+
 
 
 
