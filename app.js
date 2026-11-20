@@ -976,6 +976,18 @@ const app = {
             window.vipSupabase.client.auth.onAuthStateChange(async (event, session) => {
                 if (session && session.user && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
                     const email = session.user.email;
+                    // Si le lien provient d'une invitation chauffeur, basculer directement sur la création de mot de passe chauffeur
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('driver_invite') || session.user.user_metadata?.role === 'driver') {
+                        const existingDrv = (this.state.drivers || []).find(d => this.normalizeEmail(d.email) === this.normalizeEmail(email));
+                        if (existingDrv && !existingDrv.passwordSet) {
+                            this._pendingDriverSetup = existingDrv;
+                            const emailEl = document.getElementById('driver-setup-email-display');
+                            if (emailEl) emailEl.innerText = `${existingDrv.firstname} ${existingDrv.lastname} (${existingDrv.email})`;
+                            this.showSection('driver-setup');
+                            return;
+                        }
+                    }
                     let user = this.state.users.find(u => u.email === email);
 
                     // Si inscription en attente, finaliser les informations utilisateur
@@ -4303,11 +4315,37 @@ const app = {
         const form = document.getElementById('form-add-driver');
         if (form) form.reset();
 
-        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
-        const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(inviteToken)}&email=${encodeURIComponent(email)}`;
+        // Envoi automatique de l'email d'invitation directement dans la boîte mail du chauffeur
+        this.showToast(`Envoi de l'email d'activation à ${email}...`, "info");
+        await this.dispatchDriverInviteEmail(newDriver);
+    },
 
-        // Envoi automatique de l'email d'invitation au chauffeur
-        this.showToast(`Envoi de l'invitation par email à ${email}...`, "info");
+    dispatchDriverInviteEmail: async function(driver) {
+        if (!driver || !driver.email) return;
+        const email = this.normalizeEmail(driver.email);
+        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
+        const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(driver.inviteToken || driver.id)}&email=${encodeURIComponent(email)}`;
+
+        let sentBySupabase = false;
+        let sentByBrevo = false;
+        let lastErr = '';
+
+        // 1. Envoi réel via Supabase Auth (arrive directement dans la boîte mail du chauffeur)
+        if (window.vipSupabase && typeof window.vipSupabase.sendDriverInviteEmailViaSupabase === 'function') {
+            const supaRes = await window.vipSupabase.sendDriverInviteEmailViaSupabase(email, setupUrl, {
+                firstname: driver.firstname,
+                lastname: driver.lastname,
+                phone: driver.phone,
+                vehicleName: driver.vehicleName
+            });
+            if (supaRes && supaRes.success) {
+                sentBySupabase = true;
+            } else if (supaRes && supaRes.error) {
+                lastErr = supaRes.error;
+            }
+        }
+
+        // 2. Envoi complémentaire via Brevo (si BREVO_API_KEY est configurée sur Vercel)
         try {
             const resp = await fetch('/api/notifications/send-driver-invite', {
                 method: 'POST',
@@ -4317,30 +4355,39 @@ const app = {
                 },
                 body: JSON.stringify({
                     toEmail: email,
-                    firstname,
-                    lastname,
-                    phone,
-                    vehicleName,
+                    firstname: driver.firstname,
+                    lastname: driver.lastname,
+                    phone: driver.phone,
+                    vehicleName: driver.vehicleName,
                     setupUrl
                 })
             });
             const data = await resp.json();
-            if (data.success) {
-                this.showModalAlert(
-                    `Le chauffeur ${firstname} ${lastname} a été ajouté avec succès !\n\nUn email d'activation lui a été envoyé à ${email} pour créer son mot de passe.\n\nLien d'activation direct (si besoin sur WhatsApp) :\n${setupUrl}`,
-                    "Chauffeur Ajouté & Invité",
-                    "success"
-                );
-            } else {
-                this.showModalAlert(
-                    `Chauffeur ajouté !\n\nNote email : ${data.error || 'Vérifiez la clé Brevo sur Vercel'}.\n\nVous pouvez lui envoyer directement ce lien d'activation sur WhatsApp :\n${setupUrl}`,
-                    "Chauffeur Ajouté",
-                    "info"
-                );
+            if (data.success && !data.simulated) {
+                sentByBrevo = true;
             }
-        } catch (err) {
-            this.showModalAlert(`Chauffeur ajouté !\n\nLien d'activation à lui envoyer :\n${setupUrl}`, "Chauffeur Ajouté", "info");
+        } catch (err) {}
+
+        if (sentBySupabase || sentByBrevo) {
+            this.showModalAlert(
+                `Un email d'activation a bien été envoyé directement dans la boîte mail de ${driver.firstname} ${driver.lastname} (${email}).\n\nIl lui suffit d'ouvrir le mail (vérifier aussi les spams) et de cliquer sur le lien pour créer son mot de passe et accéder à son Espace Chauffeur.`,
+                "Email Chauffeur Envoyé ✓",
+                "success"
+            );
+        } else {
+            this.showModalAlert(
+                `Le chauffeur ${driver.firstname} ${driver.lastname} a été enregistré, mais l'envoi automatique de l'email a rencontré une limite (${lastErr || 'vérifiez la configuration email'}).\n\nCliquez sur « Renvoyer email » dans quelques instants.`,
+                "Notice Envoi Email",
+                "warning"
+            );
         }
+    },
+
+    resendDriverInviteEmail: async function(driverId) {
+        const driver = (this.state.drivers || []).find(d => d.id === driverId);
+        if (!driver) return;
+        this.showToast(`Renvoi de l'email d'activation à ${driver.email}...`, "info");
+        await this.dispatchDriverInviteEmail(driver);
     },
 
     renderDriversTable: function() {
@@ -4351,9 +4398,7 @@ const app = {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Aucun chauffeur enregistré. Utilisez le formulaire ci-dessus pour ajouter votre premier chauffeur.</td></tr>`;
             return;
         }
-        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
         tbody.innerHTML = list.map(d => {
-            const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(d.inviteToken || d.id)}&email=${encodeURIComponent(d.email)}`;
             const badge = d.passwordSet
                 ? `<span class="badge badge-approved">Actif (Mot de passe créé)</span>`
                 : `<span class="badge badge-pending">En attente mot de passe</span>`;
@@ -4365,8 +4410,8 @@ const app = {
                     <td><strong style="color:#9e7d47;">${d.vehicleName || 'Changan VIP #1'}</strong></td>
                     <td>${badge}</td>
                     <td>
-                        <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;" onclick="navigator.clipboard?.writeText('${setupUrl}'); app.showToast('Lien d\\'activation copié !', 'success');">
-                            <i class="fas fa-link"></i> Copier lien
+                        <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;" onclick="app.resendDriverInviteEmail('${d.id}')">
+                            <i class="fas fa-envelope"></i> Renvoyer email
                         </button>
                     </td>
                 </tr>

@@ -738,6 +738,34 @@ const vipSupabase = {
         } catch (err) {
             return { success: false, error: err.message };
         }
+    },
+
+    // Envoi réel d'un e-mail d'activation au chauffeur via Supabase Auth (arrive directement dans sa boîte mail)
+    sendDriverInviteEmailViaSupabase: async function (email, setupUrl, metadata = {}) {
+        if (!this.client || !email) return { success: false, error: 'Supabase Auth indisponible' };
+        try {
+            const { data, error } = await this.client.auth.signInWithOtp({
+                email: String(email).trim().toLowerCase(),
+                options: {
+                    shouldCreateUser: true,
+                    emailRedirectTo: setupUrl,
+                    data: {
+                        role: 'driver',
+                        firstname: metadata.firstname || '',
+                        lastname: metadata.lastname || '',
+                        phone: metadata.phone || '',
+                        vehicleName: metadata.vehicleName || 'Changan VIP #1'
+                    }
+                }
+            });
+            if (error) {
+                console.warn('[Supabase Auth Driver Invite] Erreur:', error.message);
+                return { success: false, error: error.message };
+            }
+            return { success: true, data };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
     }
 };
 
