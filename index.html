@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261120b">
+    <link rel="stylesheet" href="style.css?v=20261120c">
     <!-- Icones FontAwesome pour un rendu élégant -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Carte interactive Leaflet (OpenStreetMap - 100% gratuit) -->
@@ -966,13 +966,13 @@
 
                 </div>
                 
-                <!-- Section Suivi GPS en Direct du Véhicule & Agences -->
+                <!-- Section Suivi GPS en Direct du Véhicule & Agences (Visualisation Client) -->
                 <div class="vip-map-card" style="margin-top: 32px;">
                     <div class="vip-map-header">
                         <div>
                             <span class="vip-map-badge vip-map-badge-live"><span class="live-pulse-dot"></span> SUIVI GPS EN DIRECT</span>
-                            <h3>Localisation de la Navette Changan</h3>
-                            <p id="live-gps-status-text">Position de la navette VIP et agences d'embarquement (actualisée toutes les 10s).</p>
+                            <h3>Localisation de votre Navette Changan</h3>
+                            <p id="live-gps-status-text">Visualisez en temps réel la position de la navette pilotée par votre chauffeur (actualisée toutes les 10s).</p>
                         </div>
                         <div class="vip-map-actions">
                             <button type="button" class="btn-outline vip-gps-btn" onclick="app.refreshLiveVehicleMap(true)">
@@ -981,15 +981,26 @@
                             <button type="button" class="btn-outline vip-gps-btn" onclick="app.centerMapOnUser()">
                                 <i class="fas fa-crosshairs"></i> Ma position
                             </button>
-                            <a href="chauffeur-gps.html" target="_blank" class="btn-gold vip-gps-btn" id="btn-open-driver-gps" style="text-decoration: none;">
-                                <i class="fas fa-steering-wheel"></i> Mode Chauffeur GPS
-                            </a>
                         </div>
                     </div>
                     <div id="dashboard-live-map" class="vip-leaflet-map"></div>
                     <div class="vip-map-footer">
                         <span><strong>Douala :</strong> Bonamoussadi / KEVAS SARL &bull; <a href="https://www.google.com/maps/search/?api=1&query=Bonamoussadi+Douala+Cameroun" target="_blank" rel="noopener noreferrer">Itinéraire GPS ↗</a></span>
                         <span><strong>Yaoundé :</strong> Etoa-Meki / SOA TOUR &bull; <a href="https://www.google.com/maps/search/?api=1&query=Etoa+Meki+Yaounde+Cameroun" target="_blank" rel="noopener noreferrer">Itinéraire GPS ↗</a></span>
+                    </div>
+
+                    <!-- BOUTON SOS D'URGENCE (MAINTENIR 3 SECONDES) -->
+                    <div class="sos-panel">
+                        <div class="sos-panel-text">
+                            <strong><i class="fas fa-triangle-exclamation" style="color: #dc2626; margin-right: 6px;"></i> Assistance & Sécurité en Voyage (SOS)</strong>
+                            <span id="sos-hold-hint">En cas d'urgence ou de problème pendant le trajet, <strong>maintenez le bouton SOS appuyé pendant 3 secondes</strong> pour alerter immédiatement l'agence.</span>
+                        </div>
+                        <button type="button" id="btn-client-sos" class="btn-sos-hold"
+                            onmousedown="app.startSosHold()" onmouseup="app.cancelSosHold()" onmouseleave="app.cancelSosHold()"
+                            ontouchstart="app.startSosHold(event)" ontouchend="app.cancelSosHold()" ontouchcancel="app.cancelSosHold()">
+                            <span class="sos-progress-bar" id="sos-progress-bar"></span>
+                            <span class="sos-btn-label" id="sos-btn-label"><i class="fas fa-bell"></i> SOS — Maintenir 3s</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1100,6 +1111,16 @@
                         <a class="admin-nav-item" onclick="app.showAdminTab('vehicles', this)">
                             <i class="fas fa-car" style="width: 20px;"></i> Véhicules & Horaires
                         </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('drivers', this)">
+                            <i class="fas fa-id-badge" style="width: 20px;"></i> Chauffeurs
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('trips', this)">
+                            <i class="fas fa-route" style="width: 20px;"></i> Voyages & Suivi Live
+                        </a>
+                        <a class="admin-nav-item" onclick="app.showAdminTab('security', this)">
+                            <i class="fas fa-qrcode" style="width: 20px;"></i> Code QR & Alertes SOS
+                            <span id="admin-sos-badge" class="badge badge-rejected" style="margin-left: auto; display: none;">0</span>
+                        </a>
                     </nav>
 
                     <div style="margin-top: 25px; padding: 0 6px;">
@@ -1133,6 +1154,7 @@
                                         <th>Passager</th>
                                         <th>Téléphone</th>
                                         <th>Transaction Pay</th>
+                                        <th>Embarquement (QR)</th>
                                         <th>Statut</th>
                                     </tr>
                                 </thead>
@@ -1320,6 +1342,247 @@
                         </div>
                     </div>
 
+                    <!-- TAB : GESTION DES CHAUFFEURS (ACCÈS DONNÉ PAR L'ADMIN) -->
+                    <div id="admin-tab-drivers" class="admin-tab-content hidden">
+                        <div class="admin-header">
+                            <div>
+                                <h2 class="admin-title">Gestion des Chauffeurs VIP</h2>
+                                <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0;">
+                                    Ajoutez un chauffeur : il recevra automatiquement un e-mail avec son lien pour créer son mot de passe et accéder à l'Espace Chauffeur.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card-premium" style="margin-bottom: 24px; padding: 22px; max-width: 100%;">
+                            <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-white);"><i class="fas fa-user-plus" style="color: #9e7d47; margin-right: 8px;"></i> Ajouter un nouveau chauffeur</h3>
+                            <form id="form-add-driver" onsubmit="app.handleAddDriver(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: end;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="drv-firstname">Prénom</label>
+                                    <input type="text" id="drv-firstname" class="form-control" placeholder="Ex: Jean" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="drv-lastname">Nom</label>
+                                    <input type="text" id="drv-lastname" class="form-control" placeholder="Ex: Mbarga" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="drv-email">Adresse Email</label>
+                                    <input type="email" id="drv-email" class="form-control" placeholder="chauffeur@gmail.com" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="drv-phone">Téléphone</label>
+                                    <input type="tel" id="drv-phone" class="form-control" placeholder="6xx xx xx xx" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="drv-vehicle">Véhicule assigné</label>
+                                    <input type="text" id="drv-vehicle" class="form-control" value="Changan VIP #1" required>
+                                </div>
+                                <button type="submit" id="btn-add-driver" class="btn-gold" style="height: 46px; font-weight: 800;">
+                                    <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> Ajouter & Inviter
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Chauffeur</th>
+                                        <th>Téléphone</th>
+                                        <th>Email</th>
+                                        <th>Véhicule</th>
+                                        <th>Accès Compte</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-drivers-body">
+                                    <!-- Rempli en JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : HISTORIQUE DES VOYAGES (CALENDRIER) & CARTE GPS EN DIRECT -->
+                    <div id="admin-tab-trips" class="admin-tab-content hidden">
+                        <div class="admin-header" style="flex-wrap: wrap; gap: 14px;">
+                            <div>
+                                <h2 class="admin-title">Voyages, Chauffeurs & Suivi GPS Live</h2>
+                                <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0;">
+                                    Sélectionnez une date (passée ou du jour) pour voir quel chauffeur a roulé, avec quel véhicule et quels passagers ont voyagé.
+                                </p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <label for="admin-trips-date" style="font-size: 13px; font-weight: 700; color: var(--text-white);"><i class="far fa-calendar-alt" style="color: #9e7d47; margin-right: 5px;"></i> Date :</label>
+                                <input type="date" id="admin-trips-date" class="form-control" style="width: 185px; padding: 8px 12px;" onchange="app.renderAdminTripsHistory()">
+                                <button type="button" class="btn-outline" style="width: auto; padding: 8px 14px; font-size: 12.5px;" onclick="app.showAllTripsHistory()">Voir tout</button>
+                            </div>
+                        </div>
+
+                        <!-- Carte GPS en direct (Visualisation Admin) -->
+                        <div class="vip-map-card" style="margin-bottom: 24px;">
+                            <div class="vip-map-header">
+                                <div>
+                                    <span class="vip-map-badge vip-map-badge-live"><span class="live-pulse-dot"></span> VISUALISATION FLOTTE EN DIRECT</span>
+                                    <h3>Position en temps réel des chauffeurs</h3>
+                                    <p id="admin-live-gps-summary">Position mise à jour automatiquement dès qu'un chauffeur démarre son voyage.</p>
+                                </div>
+                                <button type="button" class="btn-outline vip-gps-btn" onclick="app.refreshAdminLiveMap(true)">
+                                    <i class="fas fa-sync-alt"></i> Actualiser la carte
+                                </button>
+                            </div>
+                            <div id="admin-live-map" class="vip-leaflet-map" style="height: 310px;"></div>
+                        </div>
+
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Heure</th>
+                                        <th>Trajet</th>
+                                        <th>Chauffeur</th>
+                                        <th>Véhicule</th>
+                                        <th>Passagers (Scannés / Total)</th>
+                                        <th>Statut Voyage</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-trips-body">
+                                    <!-- Rempli en JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB : CODE QR EMPLOYÉ & ALERTES SOS -->
+                    <div id="admin-tab-security" class="admin-tab-content hidden">
+                        <div class="admin-header">
+                            <h2 class="admin-title">Sécurité Embarquement (Code QR) & Alertes SOS</h2>
+                        </div>
+
+                        <!-- Modification du code PIN QR -->
+                        <div class="card-premium" style="margin-bottom: 24px; padding: 22px; max-width: 100%;">
+                            <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-white);"><i class="fas fa-qrcode" style="color: #9e7d47; margin-right: 8px;"></i> Code de vérification unique lors du scan QR</h3>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                                Lorsqu'un billet est scanné par la caméra d'un téléphone, ce code est exigé pour prouver qu'il s'agit d'un employé VIP Connect avant de pouvoir cliquer sur « Voyagé ». (Code par défaut : <strong>2846</strong>)
+                            </p>
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="admin-qr-pin-input" class="form-control" style="width: 180px; font-family: monospace; font-size: 20px; font-weight: 800; letter-spacing: 5px; text-align: center;" maxlength="8" value="2846">
+                                <button type="button" class="btn-gold" style="width: auto; padding: 11px 22px; font-weight: 800;" onclick="app.saveQrVerificationPin()">
+                                    <i class="fas fa-save" style="margin-right: 6px;"></i> Enregistrer le nouveau code
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Liste des Alertes SOS Clients -->
+                        <div class="admin-table-container">
+                            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #dc2626; font-size: 15px;"><i class="fas fa-triangle-exclamation" style="margin-right: 6px;"></i> Alertes SOS reçues des clients</strong>
+                                <button type="button" class="btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="app.syncWithSupabase(true)">Actualiser</button>
+                            </div>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Heure</th>
+                                        <th>Client</th>
+                                        <th>Téléphone</th>
+                                        <th>Position GPS</th>
+                                        <th>Statut</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-sos-body">
+                                    <!-- Rempli en JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3E ESPACE : ESPACE CHAUFFEUR DÉDIÉ (GPS EN DIRECT & DÉPARTS) -->
+        <section id="sec-driver" class="section-container hidden">
+            <div class="container" style="max-width: 960px; margin: 28px auto;">
+                <div class="card-premium" style="max-width: 100%; padding: 26px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px; margin-bottom: 20px;">
+                        <div>
+                            <span class="vip-map-badge"><i class="fas fa-id-badge"></i> ESPACE CHAUFFEUR VIP CONNECT</span>
+                            <h2 id="driver-welcome-name" style="margin: 8px 0 4px; font-size: 24px; color: var(--text-white);">Bienvenue Chauffeur</h2>
+                            <p id="driver-vehicle-badge" style="margin: 0; font-size: 13.5px; color: #9e7d47; font-weight: 700;">Véhicule assigné : Changan VIP #1</p>
+                        </div>
+                        <button type="button" class="btn-outline" style="width: auto; padding: 9px 16px; font-size: 13px;" onclick="app.handleLogout()">
+                            <i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i> Déconnexion
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="driver-trip-route">Trajet du départ</label>
+                            <select id="driver-trip-route" class="form-control" onchange="app.renderDriverPassengersList()">
+                                <option value="Douala - Yaoundé">Douala (Bonamoussadi) → Yaoundé (Etoa-Meki)</option>
+                                <option value="Yaoundé - Douala">Yaoundé (Etoa-Meki) → Douala (Bonamoussadi)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="driver-trip-time">Créneau horaire</label>
+                            <select id="driver-trip-time" class="form-control" onchange="app.renderDriverPassengersList()">
+                                <option value="04:30">04:30 (Douala)</option>
+                                <option value="10:00">10:00 (Yaoundé)</option>
+                                <option value="15:00" selected>15:00 (Douala / Yaoundé)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="driver-trip-vehicle">Véhicule conduit</label>
+                            <input type="text" id="driver-trip-vehicle" class="form-control" value="Changan VIP #1">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px;">
+                        <button type="button" id="btn-driver-start-trip" class="btn-gold" style="flex: 1; min-width: 240px; padding: 14px 20px; font-size: 15px; font-weight: 800;" onclick="app.toggleDriverTripTracking()">
+                            <i class="fas fa-play-circle" style="margin-right: 8px;"></i> Commencer le voyage (Activer GPS en direct)
+                        </button>
+                    </div>
+
+                    <div id="driver-gps-status-box" style="background: #faf8f5; border: 1px solid #d4bd9a; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #334155; margin-bottom: 18px;">
+                        <i class="fas fa-satellite-dish" style="color: #9e7d47; margin-right: 6px;"></i>
+                        <span id="driver-gps-status-label">En attente de départ. Cliquez sur « Commencer le voyage » pour partager votre localisation en direct aux passagers et à l'administrateur.</span>
+                    </div>
+
+                    <!-- Carte GPS du Chauffeur -->
+                    <div id="driver-space-map" class="vip-leaflet-map" style="height: 340px;"></div>
+                </div>
+
+                <!-- Passagers du jour pour ce voyage -->
+                <div class="card-premium" style="max-width: 100%; padding: 22px;">
+                    <h3 style="font-size: 17px; margin-bottom: 14px; color: var(--text-white);"><i class="fas fa-users" style="color: #9e7d47; margin-right: 8px;"></i> Passagers prévus aujourd'hui sur ce trajet</h3>
+                    <div id="driver-passengers-list" style="font-size: 13.5px; color: var(--text-muted);">
+                        Chargement des passagers...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE ACTIVATION MOT DE PASSE CHAUFFEUR (DEPUIS LE LIEN MAIL) -->
+        <section id="sec-driver-setup" class="section-container hidden">
+            <div class="container">
+                <div class="card-premium" style="max-width: 480px;">
+                    <div style="text-align: center; margin-bottom: 18px;">
+                        <span class="vip-map-badge"><i class="fas fa-key"></i> ACTIVATION COMPTE CHAUFFEUR</span>
+                        <h3 style="font-size: 22px; margin: 12px 0 6px; color: var(--text-white);">Créez votre mot de passe</h3>
+                        <p id="driver-setup-email-display" style="font-size: 13.5px; color: var(--text-muted); margin: 0;">Compte chauffeur VIP Connect</p>
+                    </div>
+                    <form id="form-driver-setup" onsubmit="app.handleDriverPasswordSetup(event)">
+                        <div class="form-group">
+                            <label for="driver-setup-pass">Nouveau mot de passe (min. 6 caractères)</label>
+                            <input type="password" id="driver-setup-pass" class="form-control" placeholder="••••••••" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="driver-setup-pass-confirm">Confirmer le mot de passe</label>
+                            <input type="password" id="driver-setup-pass-confirm" class="form-control" placeholder="••••••••" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn-gold" style="width: 100%; font-weight: 800;">
+                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Activer mon compte Chauffeur
+                        </button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -1682,8 +1945,9 @@
                         </tr>
                     </table>
 
-                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #edf2f7; font-size: 11px; color: #2d3748;">
-                        <strong>Points d'embarquement & d'arrivée :</strong> Douala (Bonamoussadi / <strong>KEVAS SARL</strong>) &bull; Yaoundé (Etoa-Meki / <strong>SOA TOUR</strong>)
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #edf2f7; font-size: 11px; color: #2d3748; line-height: 1.5;">
+                        <strong>Points d'embarquement & d'arrivée :</strong> Douala (Bonamoussadi / <strong>KEVAS SARL</strong>) &bull; Yaoundé (Etoa-Meki / <strong>SOA TOUR</strong>)<br>
+                        <strong>Franchise Bagages incluse :</strong> <strong>23 kg</strong> (malle arrière) + <strong>7 kg</strong> (bagage à main) par passager
                     </div>
                 </div>
 
@@ -1834,7 +2098,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Supabase Client JS SDK & Configuration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-client.js?v=20261120b"></script>
+    <script src="supabase-client.js?v=20261120c"></script>
     <!-- Librairie html2pdf locale pour génération instantanée et hors-ligne du ticket PDF -->
     <script src="html2pdf.bundle.min.js"></script>
     <script>
@@ -1842,7 +2106,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261120b"></script>
+    <script src="app.js?v=20261120c"></script>
 </body>
 
 </html>

@@ -32,8 +32,8 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 function buildTicketEmailHtml(data) {
-  const qrData = encodeURIComponent(`VIP-CONNECT|${data.resId}|${(data.passengerName || 'CLIENT').toUpperCase()}|${data.amount || '20000 FCFA'}|${data.route}|${data.date}`);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
+  const verifyUrl = `https://vip-connect.vercel.app/verify-ticket.html?res=${encodeURIComponent(data.resId || 'RES-00000')}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(verifyUrl)}`;
 
   return `
 <!DOCTYPE html>
@@ -138,7 +138,8 @@ function buildTicketEmailHtml(data) {
                     </div>
                     <p style="font-size: 11px; color: #4a5568; line-height: 1.5; margin: 0 0 8px 0;">
                       <strong>Douala :</strong> Bonamoussadi (KEVAS SARL).<br>
-                      <strong>Yaoundé :</strong> Etoa-Meki (SOA TOUR).
+                      <strong>Yaoundé :</strong> Etoa-Meki (SOA TOUR).<br>
+                      <strong>Bagages inclus :</strong> 23 kg (malle arrière) + 7 kg (bagage à main).
                     </p>
                     <div style="font-size: 11px; color: #e53e3e; font-weight: bold;">
                       ⏱ Présentation requise 15 minutes avant l'heure de départ.

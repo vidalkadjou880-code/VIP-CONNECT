@@ -12,7 +12,12 @@ const app = {
         reservations: [],
         payments: [],
         reviews: [],
+        drivers: [],
+        trips: [],
+        sosAlerts: [],
+        qrPin: '2846',
         currentUser: null,
+        currentDriver: null,
         activeAdminTab: 'reservations',
         currentReviewUserPhone: null, // Utilisateur en cours d'examen KYC
         selectedPaymentDetails: null, // Réservation temporaire en cours de paiement
@@ -48,6 +53,7 @@ const app = {
         this.initServiceWorkerAndNotifications();
         this.startDepartureReminderEngine();
         this.initMaps();
+        this.checkDriverInviteUrl();
         
         // Rafraîchir les horaires dynamiques régulièrement
         setInterval(() => {
@@ -408,6 +414,10 @@ const app = {
         const localUsers = localStorage.getItem('vip_users');
         const localReservations = localStorage.getItem('vip_reservations');
         const localPayments = localStorage.getItem('vip_payments');
+        try { this.state.drivers = JSON.parse(localStorage.getItem('vip_drivers') || '[]'); } catch (e) { this.state.drivers = []; }
+        try { this.state.trips = JSON.parse(localStorage.getItem('vip_trips') || '[]'); } catch (e) { this.state.trips = []; }
+        try { this.state.sosAlerts = JSON.parse(localStorage.getItem('vip_sos_alerts') || '[]'); } catch (e) { this.state.sosAlerts = []; }
+        this.state.qrPin = localStorage.getItem('vip_qr_pin') || '2846';
 
         // Nettoyage automatique des faux profils ou faux numéros de test résiduels
         const mockPhones = ['671234567', '694567890', '650112233', '699445566', '699999999', '677777777', '688888888'];
@@ -522,12 +532,34 @@ const app = {
         if (!isConnected) return;
 
         try {
-            const [remoteUsers, remoteReservations, remotePayments, remoteReviews] = await Promise.all([
+            const [remoteUsers, remoteReservations, remotePayments, remoteReviews, remoteDrivers, remoteTrips, remoteSos, remotePin] = await Promise.all([
                 window.vipSupabase.fetchUsers(),
                 window.vipSupabase.fetchReservations(),
                 window.vipSupabase.fetchPayments(),
-                window.vipSupabase.fetchReviews()
+                window.vipSupabase.fetchReviews(),
+                window.vipSupabase.fetchDrivers ? window.vipSupabase.fetchDrivers() : Promise.resolve([]),
+                window.vipSupabase.fetchTrips ? window.vipSupabase.fetchTrips() : Promise.resolve([]),
+                window.vipSupabase.fetchSosAlerts ? window.vipSupabase.fetchSosAlerts() : Promise.resolve([]),
+                window.vipSupabase.getSetting ? window.vipSupabase.getSetting('qr_verification_pin') : Promise.resolve(null)
             ]);
+
+            if (Array.isArray(remoteDrivers) && remoteDrivers.length > 0) {
+                this.state.drivers = remoteDrivers;
+                localStorage.setItem('vip_drivers', JSON.stringify(remoteDrivers));
+            }
+            if (Array.isArray(remoteTrips) && remoteTrips.length > 0) {
+                this.state.trips = remoteTrips;
+                localStorage.setItem('vip_trips', JSON.stringify(remoteTrips));
+            }
+            if (Array.isArray(remoteSos)) {
+                this.state.sosAlerts = remoteSos;
+                localStorage.setItem('vip_sos_alerts', JSON.stringify(remoteSos));
+                this.updateAdminSosBadge();
+            }
+            if (remotePin) {
+                this.state.qrPin = String(remotePin).trim();
+                localStorage.setItem('vip_qr_pin', this.state.qrPin);
+            }
 
             let hasUpdates = false;
 
@@ -642,7 +674,7 @@ const app = {
         }
 
         // Cacher toutes les sections
-        const sections = ['home-login', 'login', 'register', 'verify-otp', 'forgot-password', 'kyc-verification', 'dashboard', 'admin', 'reviews'];
+        const sections = ['home-login', 'login', 'register', 'verify-otp', 'forgot-password', 'kyc-verification', 'dashboard', 'admin', 'reviews', 'driver', 'driver-setup'];
         sections.forEach(id => {
             const el = document.getElementById('sec-' + id);
             if (el) el.classList.add('hidden');
@@ -677,6 +709,8 @@ const app = {
             setTimeout(() => this.initDashboardLiveMap(), 180);
         } else if (sectionId === 'admin') {
             this.loadAdminData();
+        } else if (sectionId === 'driver') {
+            setTimeout(() => this.initDriverSpace(), 180);
         } else if (sectionId === 'kyc-verification') {
             this.renderKYCStatusAlert();
             this.handleDocTypeChange();
@@ -866,7 +900,10 @@ const app = {
             () => {
                 localStorage.removeItem('vip_current_session');
                 sessionStorage.removeItem('vip_current_session');
+                localStorage.removeItem('vip_current_driver');
                 this.state.currentUser = null;
+                this.state.currentDriver = null;
+                this.stopDriverTripTrackingIfActive();
                 if (window.vipSupabase && window.vipSupabase.client) {
                     window.vipSupabase.client.auth.signOut().catch(() => {});
                 }
@@ -1027,6 +1064,46 @@ const app = {
 
         const cleanId = identifier.replace(/[\s\-\(\)\+]/g, '').replace(/^237/, '');
         const idLower = identifier.toLowerCase();
+
+        // Vérifier d'abord s'il s'agit d'un compte Chauffeur VIP Connect
+        let driver = (this.state.drivers || []).find(d => {
+            const dPhone = this.normalizePhone(d.phone);
+            const dEmail = this.normalizeEmail(d.email);
+            return (dEmail === idLower || (dPhone && dPhone === cleanId)) && d.passwordSet && d.password === password;
+        });
+        if (!driver && window.vipSupabase && typeof window.vipSupabase.fetchDrivers === 'function') {
+            try {
+                const remoteDrivers = await window.vipSupabase.fetchDrivers();
+                if (Array.isArray(remoteDrivers) && remoteDrivers.length > 0) {
+                    this.state.drivers = remoteDrivers;
+                    localStorage.setItem('vip_drivers', JSON.stringify(remoteDrivers));
+                    driver = remoteDrivers.find(d => {
+                        const dPhone = this.normalizePhone(d.phone);
+                        const dEmail = this.normalizeEmail(d.email);
+                        return (dEmail === idLower || (dPhone && dPhone === cleanId)) && d.passwordSet && d.password === password;
+                    });
+                }
+            } catch (e) {}
+        }
+        if (driver) {
+            this.state.currentDriver = driver;
+            this.state.currentUser = {
+                firstname: driver.firstname,
+                lastname: driver.lastname,
+                email: driver.email,
+                phone: driver.phone,
+                isDriver: true,
+                isAdmin: false,
+                kyc: { status: 'approved' }
+            };
+            localStorage.setItem('vip_current_driver', JSON.stringify(driver));
+            this.updateHeaderMenu();
+            this.showModalAlert(`Bienvenue ${driver.firstname} dans votre Espace Chauffeur VIP Connect.`, "Connexion Chauffeur", "success");
+            this.showSection('driver');
+            const formLogin = document.getElementById('form-login');
+            if (formLogin) formLogin.reset();
+            return;
+        }
 
         // Recherche par email ou par téléphone
         let user = this.state.users.find(u => {
@@ -2644,6 +2721,12 @@ const app = {
         this.calculateFinanceStats();
         this.updateAdminKycBadge();
         this.updateAdminUsersBadge();
+        this.renderDriversTable();
+        this.renderAdminTripsHistory();
+        this.renderSosAlertsTable();
+        this.updateAdminSosBadge();
+        const pinInput = document.getElementById('admin-qr-pin-input');
+        if (pinInput) pinInput.value = this.state.qrPin || '2846';
     },
 
     startAdminAutoSync: function() {
@@ -2679,11 +2762,24 @@ const app = {
         }
 
         // Cacher tous les onglets
-        const tabs = ['reservations', 'users', 'kyc', 'finance', 'vehicles'];
+        const tabs = ['reservations', 'users', 'kyc', 'finance', 'vehicles', 'drivers', 'trips', 'security'];
         tabs.forEach(id => {
             const el = document.getElementById('admin-tab-' + id);
             if (el) el.classList.add('hidden');
         });
+        const targetTab = document.getElementById('admin-tab-' + tabId);
+        if (targetTab) targetTab.classList.remove('hidden');
+
+        if (tabId === 'drivers') this.renderDriversTable();
+        if (tabId === 'trips') {
+            this.renderAdminTripsHistory();
+            setTimeout(() => this.initAdminLiveMap(), 180);
+        }
+        if (tabId === 'security') {
+            this.renderSosAlertsTable();
+            const pinInput = document.getElementById('admin-qr-pin-input');
+            if (pinInput) pinInput.value = this.state.qrPin || '2846';
+        }
 
         // Afficher l'onglet actif
         const activeTab = document.getElementById('admin-tab-' + tabId);
@@ -2970,6 +3066,7 @@ const app = {
                 <td>${res.passengerName}</td>
                 <td>${res.phone}</td>
                 <td><span style="font-family: monospace; font-size:13px; color:var(--primary-gold);">${res.txId}</span></td>
+                <td>${res.boarded ? '<span class="badge badge-approved"><i class="fas fa-check-double"></i> A voyagé ✓</span>' : '<span class="badge badge-pending">Non scanné</span>'}</td>
                 <td><span class="badge badge-approved">${this.state.lang === 'fr' ? 'Payé' : 'Paid'}</span></td>
             </tr>
         `).join('');
@@ -3462,8 +3559,9 @@ const app = {
             paymentProviderEl.innerText = provider;
         }
         
-        // QR Code local instantané (SVG en Data URL) + chargement haute résolution
-        const qrRawText = `VIP-CONNECT|${resId}|${(ln || 'CLIENT').toUpperCase()}_${fn || ''}|${details.amount || 20000}FCFA|${details.route}|${details.date}|${txId || ''}`;
+        // QR Code pointe directement vers la page de vérification employé (verify-ticket.html?res=...)
+        const baseOrigin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
+        const qrRawText = `${baseOrigin}/verify-ticket.html?res=${encodeURIComponent(resId || 'RES-00000')}`;
         const qrData = encodeURIComponent(qrRawText);
         const qrImg = document.getElementById('ticket-qr');
         if (qrImg) {
@@ -3773,14 +3871,14 @@ const app = {
         ctx.fillText(seat, X + 32, Y + 302);
         ctx.fillText(vehicle + ' (Changan)', X + 540, Y + 302);
 
-        // Points d'embarquement
-        roundRect(X + 28, Y + 332, CW - 56, 64, 10, '#faf8f5', '#e2e8f0', 1.5);
+        // Points d'embarquement & Franchise Bagages
+        roundRect(X + 28, Y + 324, CW - 56, 84, 10, '#faf8f5', '#e2e8f0', 1.5);
         ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 18px Arial, sans-serif';
-        ctx.fillText('📍 Agences Départ & Arrivée :', X + 46, Y + 360);
-        ctx.font = '600 18px Arial, sans-serif';
-        ctx.fillStyle = '#334155';
-        ctx.fillText('Douala : Bonamoussadi (KEVAS SARL)   •   Yaoundé : Etoa-Meki (SOA TOUR)', X + 46, Y + 385);
+        ctx.font = 'bold 17px Arial, sans-serif';
+        ctx.fillText('📍 Agences : Douala (Bonamoussadi / KEVAS SARL)  •  Yaoundé (Etoa-Meki / SOA TOUR)', X + 44, Y + 356);
+        ctx.fillStyle = '#9e7d47';
+        ctx.font = 'bold 17px Arial, sans-serif';
+        ctx.fillText('🧳 Franchise Bagages incluse : 23 kg (malle arrière) + 7 kg (bagage à main)', X + 44, Y + 388);
 
         // SECTION 3 : DONNÉES FINANCIÈRES & PAIEMENT
         Y += 455;
@@ -4144,6 +4242,662 @@ const app = {
 
         this.showTicketModal(res.id, res.txId || 'TX-VIP', details);
         await this.sendTicketPdfByEmail(res, details);
+    },
+
+    // -------------------------------------------------------------
+    // 3E ESPACE CHAUFFEUR, HISTORIQUE VOYAGES, CODE PIN QR & SOS (3s)
+    // -------------------------------------------------------------
+    _driverMap: null,
+    _driverMarker: null,
+    _driverWatchId: null,
+    _driverActiveTrip: null,
+    _driverLastSentAt: 0,
+    _adminLiveMap: null,
+    _adminVehicleMarkers: [],
+    _sosTimer: null,
+    _sosStartTime: 0,
+    _pendingDriverSetup: null,
+
+    // 1. GESTION DES CHAUFFEURS DANS LA CONSOLE ADMIN
+    handleAddDriver: async function(event) {
+        if (event) event.preventDefault();
+        const firstname = (document.getElementById('drv-firstname')?.value || '').trim();
+        const lastname = (document.getElementById('drv-lastname')?.value || '').trim();
+        const email = this.normalizeEmail(document.getElementById('drv-email')?.value || '');
+        const phone = this.normalizePhone(document.getElementById('drv-phone')?.value || '') || (document.getElementById('drv-phone')?.value || '').trim();
+        const vehicleName = (document.getElementById('drv-vehicle')?.value || 'Changan VIP #1').trim();
+
+        if (!firstname || !lastname || !email || !phone) {
+            this.showModalAlert("Veuillez remplir le nom, prénom, email et téléphone du chauffeur.", "Champs Requis", "warning");
+            return;
+        }
+
+        const exists = (this.state.drivers || []).some(d => this.normalizeEmail(d.email) === email);
+        if (exists) {
+            this.showModalAlert("Un chauffeur avec cette adresse email existe déjà.", "Chauffeur Existant", "warning");
+            return;
+        }
+
+        const inviteToken = 'DRV-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        const newDriver = {
+            id: 'DRV-' + Date.now(),
+            firstname,
+            lastname,
+            email,
+            phone,
+            vehicleName,
+            vehiclePlate: '',
+            password: '',
+            passwordSet: false,
+            inviteToken,
+            status: 'actif'
+        };
+
+        this.state.drivers.unshift(newDriver);
+        localStorage.setItem('vip_drivers', JSON.stringify(this.state.drivers));
+        if (window.vipSupabase && typeof window.vipSupabase.saveDriver === 'function') {
+            await window.vipSupabase.saveDriver(newDriver);
+        }
+
+        this.renderDriversTable();
+        const form = document.getElementById('form-add-driver');
+        if (form) form.reset();
+
+        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
+        const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(inviteToken)}&email=${encodeURIComponent(email)}`;
+
+        // Envoi automatique de l'email d'invitation au chauffeur
+        this.showToast(`Envoi de l'invitation par email à ${email}...`, "info");
+        try {
+            const resp = await fetch('/api/notifications/send-driver-invite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-VIP-App-Token': 'VIP_CONNECT_SECURE_TOKEN_2026_x880'
+                },
+                body: JSON.stringify({
+                    toEmail: email,
+                    firstname,
+                    lastname,
+                    phone,
+                    vehicleName,
+                    setupUrl
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                this.showModalAlert(
+                    `Le chauffeur ${firstname} ${lastname} a été ajouté avec succès !\n\nUn email d'activation lui a été envoyé à ${email} pour créer son mot de passe.\n\nLien d'activation direct (si besoin sur WhatsApp) :\n${setupUrl}`,
+                    "Chauffeur Ajouté & Invité",
+                    "success"
+                );
+            } else {
+                this.showModalAlert(
+                    `Chauffeur ajouté !\n\nNote email : ${data.error || 'Vérifiez la clé Brevo sur Vercel'}.\n\nVous pouvez lui envoyer directement ce lien d'activation sur WhatsApp :\n${setupUrl}`,
+                    "Chauffeur Ajouté",
+                    "info"
+                );
+            }
+        } catch (err) {
+            this.showModalAlert(`Chauffeur ajouté !\n\nLien d'activation à lui envoyer :\n${setupUrl}`, "Chauffeur Ajouté", "info");
+        }
+    },
+
+    renderDriversTable: function() {
+        const tbody = document.getElementById('table-drivers-body');
+        if (!tbody) return;
+        const list = this.state.drivers || [];
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Aucun chauffeur enregistré. Utilisez le formulaire ci-dessus pour ajouter votre premier chauffeur.</td></tr>`;
+            return;
+        }
+        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://vip-connect.vercel.app';
+        tbody.innerHTML = list.map(d => {
+            const setupUrl = `${origin}/?driver_invite=${encodeURIComponent(d.inviteToken || d.id)}&email=${encodeURIComponent(d.email)}`;
+            const badge = d.passwordSet
+                ? `<span class="badge badge-approved">Actif (Mot de passe créé)</span>`
+                : `<span class="badge badge-pending">En attente mot de passe</span>`;
+            return `
+                <tr>
+                    <td><strong>${d.firstname} ${d.lastname}</strong></td>
+                    <td><span style="font-family:monospace;">${d.phone}</span></td>
+                    <td>${d.email}</td>
+                    <td><strong style="color:#9e7d47;">${d.vehicleName || 'Changan VIP #1'}</strong></td>
+                    <td>${badge}</td>
+                    <td>
+                        <button type="button" class="btn-outline" style="width:auto;padding:6px 10px;font-size:11.5px;" onclick="navigator.clipboard?.writeText('${setupUrl}'); app.showToast('Lien d\\'activation copié !', 'success');">
+                            <i class="fas fa-link"></i> Copier lien
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    // Détection du lien d'invitation chauffeur (?driver_invite=...&email=...)
+    checkDriverInviteUrl: async function() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('driver_invite');
+        const email = this.normalizeEmail(params.get('email') || '');
+        if (!token || !email) return;
+
+        if (window.vipSupabase && typeof window.vipSupabase.fetchDrivers === 'function') {
+            const remoteDrivers = await window.vipSupabase.fetchDrivers();
+            if (Array.isArray(remoteDrivers) && remoteDrivers.length > 0) {
+                this.state.drivers = remoteDrivers;
+                localStorage.setItem('vip_drivers', JSON.stringify(remoteDrivers));
+            }
+        }
+
+        const driver = (this.state.drivers || []).find(d => this.normalizeEmail(d.email) === email && (d.inviteToken === token || d.id === token));
+        if (!driver) {
+            this.showModalAlert("Ce lien d'activation chauffeur est introuvable ou a déjà expiré. Demandez un nouveau lien à l'administrateur.", "Lien Invalide", "warning");
+            return;
+        }
+
+        this._pendingDriverSetup = driver;
+        const emailEl = document.getElementById('driver-setup-email-display');
+        if (emailEl) emailEl.innerText = `${driver.firstname} ${driver.lastname} (${driver.email})`;
+        this.showSection('driver-setup');
+    },
+
+    handleDriverPasswordSetup: async function(event) {
+        if (event) event.preventDefault();
+        if (!this._pendingDriverSetup) return;
+
+        const p1 = document.getElementById('driver-setup-pass')?.value || '';
+        const p2 = document.getElementById('driver-setup-pass-confirm')?.value || '';
+        if (p1.length < 6) {
+            this.showModalAlert("Le mot de passe doit contenir au moins 6 caractères.", "Mot de passe trop court", "warning");
+            return;
+        }
+        if (p1 !== p2) {
+            this.showModalAlert("Les deux mots de passe ne correspondent pas.", "Erreur", "error");
+            return;
+        }
+
+        const driver = this._pendingDriverSetup;
+        driver.password = p1;
+        driver.passwordSet = true;
+
+        const idx = (this.state.drivers || []).findIndex(d => d.id === driver.id);
+        if (idx >= 0) this.state.drivers[idx] = driver;
+        else this.state.drivers.push(driver);
+
+        localStorage.setItem('vip_drivers', JSON.stringify(this.state.drivers));
+        if (window.vipSupabase && typeof window.vipSupabase.saveDriver === 'function') {
+            await window.vipSupabase.saveDriver(driver);
+        }
+
+        // Nettoyer l'URL
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+
+        this.state.currentDriver = driver;
+        this.state.currentUser = {
+            firstname: driver.firstname,
+            lastname: driver.lastname,
+            email: driver.email,
+            phone: driver.phone,
+            isDriver: true,
+            isAdmin: false,
+            kyc: { status: 'approved' }
+        };
+        localStorage.setItem('vip_current_driver', JSON.stringify(driver));
+        this._pendingDriverSetup = null;
+
+        this.showModalAlert(`Mot de passe créé avec succès ! Bienvenue dans votre Espace Chauffeur, ${driver.firstname}.`, "Compte Chauffeur Activé", "success");
+        this.showSection('driver');
+    },
+
+    // 2. ESPACE CHAUFFEUR : CARTE GPS & BOUTON "COMMENCER LE VOYAGE"
+    initDriverSpace: function() {
+        const drv = this.state.currentDriver;
+        if (drv) {
+            const nameEl = document.getElementById('driver-welcome-name');
+            if (nameEl) nameEl.innerText = `Bienvenue, ${drv.firstname} ${drv.lastname}`;
+            const vehBadge = document.getElementById('driver-vehicle-badge');
+            if (vehBadge) vehBadge.innerText = `Véhicule assigné : ${drv.vehicleName || 'Changan VIP #1'}`;
+            const vehInput = document.getElementById('driver-trip-vehicle');
+            if (vehInput && !vehInput.dataset.edited) vehInput.value = drv.vehicleName || 'Changan VIP #1';
+        }
+
+        if (!this._driverMap && typeof L !== 'undefined' && document.getElementById('driver-space-map')) {
+            this._driverMap = this.setupBaseMapWithAgencies('driver-space-map');
+            if (this._driverMap) {
+                const { douala } = this.AGENCIES_COORDS;
+                this._driverMarker = L.marker([douala.lat, douala.lng], {
+                    icon: this.createVehicleMarkerIcon(),
+                    zIndexOffset: 1000
+                }).addTo(this._driverMap).bindPopup('<strong>Votre véhicule</strong>');
+            }
+        } else if (this._driverMap) {
+            this._driverMap.invalidateSize();
+        }
+        this.renderDriverPassengersList();
+    },
+
+    renderDriverPassengersList: function() {
+        const box = document.getElementById('driver-passengers-list');
+        if (!box) return;
+        const route = document.getElementById('driver-trip-route')?.value || 'Douala - Yaoundé';
+        const time = document.getElementById('driver-trip-time')?.value || '15:00';
+        const today = new Date().toISOString().split('T')[0];
+
+        const pax = (this.state.reservations || []).filter(r => r.date === today && r.route === route && r.time === time);
+        if (pax.length === 0) {
+            box.innerHTML = `<div style="padding:12px;background:#faf8f5;border-radius:8px;border:1px solid #e2e8f0;">Aucun passager enregistré pour le départ d'aujourd'hui (${today}) à ${time} sur ${route}.</div>`;
+            return;
+        }
+        box.innerHTML = pax.map((p, i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <strong>${i + 1}. ${p.passengerName || 'Passager'}</strong> (${p.phone}) &bull; Place : <strong>${this.formatSeatLabel(p.seatId)}</strong>
+                </div>
+                <div>
+                    ${p.boarded
+                        ? '<span class="badge badge-approved">A voyagé ✓ (QR scanné)</span>'
+                        : '<span class="badge badge-pending">En attente scan QR</span>'}
+                </div>
+            </div>
+        `).join('');
+    },
+
+    toggleDriverTripTracking: async function() {
+        const btn = document.getElementById('btn-driver-start-trip');
+        const labelEl = document.getElementById('driver-gps-status-label');
+
+        if (this._driverWatchId !== null) {
+            this.stopDriverTripTrackingIfActive();
+            if (btn) {
+                btn.className = 'btn-gold';
+                btn.innerHTML = '<i class="fas fa-play-circle" style="margin-right: 8px;"></i> Commencer le voyage (Activer GPS en direct)';
+            }
+            if (labelEl) labelEl.innerText = 'Voyage terminé et enregistré dans l\'historique administrateur.';
+            this.showToast("Voyage terminé ! Le partage GPS est arrêté.", "info");
+            return;
+        }
+
+        if (!('geolocation' in navigator)) {
+            this.showModalAlert("La géolocalisation GPS n'est pas supportée par cet appareil.", "GPS Indisponible", "error");
+            return;
+        }
+
+        const drv = this.state.currentDriver || { id: 'DRV-1', firstname: 'Chauffeur', lastname: 'VIP', phone: '' };
+        const route = document.getElementById('driver-trip-route')?.value || 'Douala - Yaoundé';
+        const time = document.getElementById('driver-trip-time')?.value || '15:00';
+        const vehicleName = (document.getElementById('driver-trip-vehicle')?.value || drv.vehicleName || 'Changan VIP #1').trim();
+        const today = new Date().toISOString().split('T')[0];
+
+        // Enregistrer le démarrage du voyage dans vip_trips
+        this._driverActiveTrip = {
+            id: 'TRIP-' + Date.now(),
+            date: today,
+            time,
+            route,
+            driverId: drv.id,
+            driverName: `${drv.firstname} ${drv.lastname}`.trim(),
+            driverPhone: drv.phone || '',
+            vehicleId: 1,
+            vehicleName,
+            status: 'en_cours',
+            startedAt: new Date().toISOString(),
+            endedAt: null
+        };
+        this.state.trips.unshift(this._driverActiveTrip);
+        localStorage.setItem('vip_trips', JSON.stringify(this.state.trips));
+        if (window.vipSupabase && typeof window.vipSupabase.saveTrip === 'function') {
+            await window.vipSupabase.saveTrip(this._driverActiveTrip);
+        }
+
+        if (btn) {
+            btn.className = 'btn-outline';
+            btn.style.background = '#dc2626';
+            btn.style.color = '#ffffff';
+            btn.style.borderColor = '#b91c1c';
+            btn.innerHTML = '<i class="fas fa-stop-circle" style="margin-right: 8px;"></i> Terminer le voyage (Arrêter GPS)';
+        }
+        if (labelEl) labelEl.innerText = `🚀 Voyage en cours (${route} — ${vehicleName}). Partage GPS en direct actif...`;
+        this.showToast("Voyage démarré ! Votre position GPS est visible en direct.", "success");
+
+        this._driverLastSentAt = 0;
+        this._driverWatchId = navigator.geolocation.watchPosition(
+            async (pos) => {
+                const now = Date.now();
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const speedKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+
+                if (this._driverMap && this._driverMarker) {
+                    this._driverMarker.setLatLng([lat, lng]);
+                    this._driverMap.setView([lat, lng], 13, { animate: true });
+                }
+                if (now - this._driverLastSentAt < 6000) return;
+                this._driverLastSentAt = now;
+
+                const locPayload = {
+                    vehicleId: 1,
+                    vehicleName,
+                    route,
+                    lat,
+                    lng,
+                    speedKmh,
+                    status: 'en_route',
+                    driverName: `${drv.firstname} ${drv.lastname}`.trim(),
+                    driverPhone: drv.phone || ''
+                };
+                try { localStorage.setItem('vip_live_vehicle_1', JSON.stringify({ ...locPayload, updated_at: new Date().toISOString() })); } catch (e) {}
+                if (window.vipSupabase && typeof window.vipSupabase.updateVehicleLocation === 'function') {
+                    await window.vipSupabase.updateVehicleLocation(locPayload);
+                }
+                if (labelEl) {
+                    labelEl.innerText = `✅ En direct : ${lat.toFixed(5)}, ${lng.toFixed(5)} (${speedKmh} km/h) — envoyé à ${new Date().toLocaleTimeString('fr-FR')}`;
+                }
+            },
+            (err) => {
+                if (labelEl) labelEl.innerText = `⚠️ Erreur GPS : ${err.message}. Autorisez la localisation sur votre téléphone.`;
+            },
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
+    },
+
+    stopDriverTripTrackingIfActive: async function() {
+        if (this._driverWatchId !== null) {
+            navigator.geolocation.clearWatch(this._driverWatchId);
+            this._driverWatchId = null;
+        }
+        if (this._driverActiveTrip) {
+            this._driverActiveTrip.status = 'termine';
+            this._driverActiveTrip.endedAt = new Date().toISOString();
+            localStorage.setItem('vip_trips', JSON.stringify(this.state.trips));
+            if (window.vipSupabase && typeof window.vipSupabase.saveTrip === 'function') {
+                await window.vipSupabase.saveTrip(this._driverActiveTrip);
+            }
+            this._driverActiveTrip = null;
+        }
+    },
+
+    // 3. HISTORIQUE DES VOYAGES (CALENDRIER ADMIN) & CARTE ADMIN EN DIRECT
+    showAllTripsHistory: function() {
+        const dateEl = document.getElementById('admin-trips-date');
+        if (dateEl) dateEl.value = '';
+        this.renderAdminTripsHistory();
+    },
+
+    renderAdminTripsHistory: function() {
+        const tbody = document.getElementById('table-admin-trips-body');
+        if (!tbody) return;
+        const selectedDate = document.getElementById('admin-trips-date')?.value || '';
+
+        let list = [...(this.state.trips || [])];
+        if (selectedDate) {
+            list = list.filter(t => t.date === selectedDate);
+        }
+
+        // Compléter avec les réservations de la date sélectionnée même si aucun chauffeur n'a encore cliqué "Commencer"
+        const resForDate = (this.state.reservations || []).filter(r => !selectedDate || r.date === selectedDate);
+        resForDate.forEach(r => {
+            const exists = list.some(t => t.date === r.date && t.time === r.time && t.route === r.route);
+            if (!exists) {
+                list.push({
+                    id: `AUTO-${r.date}-${r.time}`,
+                    date: r.date,
+                    time: r.time,
+                    route: r.route,
+                    driverName: r.driverName || 'Non démarré par chauffeur',
+                    vehicleName: `Changan VIP #${r.vehicleId || 1}`,
+                    status: 'programme'
+                });
+            }
+        });
+
+        list.sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Aucun voyage enregistré pour ${selectedDate ? 'le ' + selectedDate : 'le moment'}.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = list.map(t => {
+            const pax = (this.state.reservations || []).filter(r => r.date === t.date && r.route === t.route && r.time === t.time);
+            const boardedCount = pax.filter(r => r.boarded).length;
+            const paxSummary = pax.length > 0
+                ? pax.map(p => `${p.passengerName} (${p.boarded ? '✅ Voyagé' : '⏳ Non scanné'})`).join('<br>')
+                : '<span style="color:var(--text-muted);">0 passager</span>';
+
+            let statusBadge = '<span class="badge badge-pending">Programmé</span>';
+            if (t.status === 'en_cours') statusBadge = '<span class="badge badge-approved">En route (GPS Live)</span>';
+            else if (t.status === 'termine') statusBadge = '<span class="badge" style="background:#e2e8f0;color:#1e293b;">Terminé ✓</span>';
+
+            return `
+                <tr>
+                    <td><strong>${t.date}</strong> à <strong>${t.time}</strong></td>
+                    <td>${t.route}</td>
+                    <td><strong>${t.driverName || '-'}</strong></td>
+                    <td><span style="color:#9e7d47;font-weight:700;">${t.vehicleName || 'Changan VIP #1'}</span></td>
+                    <td style="white-space:normal;min-width:200px;font-size:12.5px;">
+                        <strong>${boardedCount}/${pax.length} voyagé(s)</strong><br>${paxSummary}
+                    </td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    initAdminLiveMap: function() {
+        const el = document.getElementById('admin-live-map');
+        if (!el || typeof L === 'undefined') return;
+        if (!this._adminLiveMap) {
+            this._adminLiveMap = this.setupBaseMapWithAgencies('admin-live-map');
+        } else {
+            this._adminLiveMap.invalidateSize();
+        }
+        this.refreshAdminLiveMap(false);
+    },
+
+    refreshAdminLiveMap: async function(manual = false) {
+        if (!this._adminLiveMap) return;
+        let locs = [];
+        if (window.vipSupabase && typeof window.vipSupabase.fetchAllVehicleLocations === 'function') {
+            locs = await window.vipSupabase.fetchAllVehicleLocations();
+        }
+        if (locs.length === 0) {
+            try {
+                const cached = localStorage.getItem('vip_live_vehicle_1');
+                if (cached) locs = [JSON.parse(cached)];
+            } catch (e) {}
+        }
+
+        // Nettoyer les anciens marqueurs
+        this._adminVehicleMarkers.forEach(m => this._adminLiveMap.removeLayer(m));
+        this._adminVehicleMarkers = [];
+
+        const summaryEl = document.getElementById('admin-live-gps-summary');
+        if (locs.length === 0) {
+            if (summaryEl) summaryEl.innerText = 'Aucun véhicule en partage GPS actif pour le moment.';
+            return;
+        }
+
+        locs.forEach(loc => {
+            if (!loc.lat || !loc.lng) return;
+            const m = L.marker([Number(loc.lat), Number(loc.lng)], {
+                icon: this.createVehicleMarkerIcon(),
+                zIndexOffset: 1000
+            }).addTo(this._adminLiveMap);
+            const drvTxt = loc.driver_name || loc.driverName || 'Chauffeur VIP';
+            const speed = Number(loc.speed_kmh || loc.speedKmh || 0);
+            m.bindPopup(`<strong>${loc.vehicle_name || loc.vehicleName || 'Changan VIP #1'}</strong><br>Chauffeur : ${drvTxt}<br>Trajet : ${loc.route || 'Douala - Yaoundé'}<br>Vitesse : ${speed} km/h`);
+            this._adminVehicleMarkers.push(m);
+            if (manual) {
+                this._adminLiveMap.setView([Number(loc.lat), Number(loc.lng)], 12, { animate: true });
+                m.openPopup();
+            }
+        });
+
+        const first = locs[0];
+        if (summaryEl) {
+            summaryEl.innerHTML = `<strong>${first.vehicle_name || first.vehicleName || 'Changan VIP #1'}</strong> (Chauffeur : <strong>${first.driver_name || first.driverName || 'VIP'}</strong>) &bull; ${first.route || 'Douala - Yaoundé'} &bull; MàJ ${first.updated_at ? new Date(first.updated_at).toLocaleTimeString('fr-FR') : 'à l\'instant'}`;
+        }
+        if (manual) this.showToast("Carte flotte administrateur actualisée !", "success");
+    },
+
+    // 4. CODE PIN DE VÉRIFICATION QR (MODIFIABLE PAR L'ADMIN)
+    saveQrVerificationPin: async function() {
+        const input = document.getElementById('admin-qr-pin-input');
+        const newPin = (input ? input.value : '').trim();
+        if (!newPin || newPin.length < 4) {
+            this.showModalAlert("Le code de vérification doit comporter au moins 4 chiffres.", "Code Invalide", "warning");
+            return;
+        }
+        this.state.qrPin = newPin;
+        localStorage.setItem('vip_qr_pin', newPin);
+        if (window.vipSupabase && typeof window.vipSupabase.setSetting === 'function') {
+            await window.vipSupabase.setSetting('qr_verification_pin', newPin);
+        }
+        this.showToast(`Nouveau code de vérification QR enregistré : ${newPin}`, "success");
+    },
+
+    // 5. BOUTON SOS CLIENT (MAINTENIR 3 SECONDES) & ALERTES ADMIN
+    startSosHold: function(ev) {
+        if (ev && ev.cancelable) ev.preventDefault();
+        if (this._sosTimer) return;
+        const bar = document.getElementById('sos-progress-bar');
+        const label = document.getElementById('sos-btn-label');
+        this._sosStartTime = Date.now();
+        const duration = 3000;
+
+        this._sosTimer = setInterval(() => {
+            const elapsed = Date.now() - this._sosStartTime;
+            const pct = Math.min(100, (elapsed / duration) * 100);
+            if (bar) bar.style.width = pct + '%';
+            const remaining = Math.max(0, ((duration - elapsed) / 1000)).toFixed(1);
+            if (label) label.innerHTML = `<i class="fas fa-bell"></i> Maintenez... ${remaining}s`;
+
+            if (elapsed >= duration) {
+                this.cancelSosHold();
+                this.triggerSosEmergencyAlert();
+            }
+        }, 50);
+    },
+
+    cancelSosHold: function() {
+        if (this._sosTimer) {
+            clearInterval(this._sosTimer);
+            this._sosTimer = null;
+        }
+        const bar = document.getElementById('sos-progress-bar');
+        const label = document.getElementById('sos-btn-label');
+        if (bar) bar.style.width = '0%';
+        if (label) label.innerHTML = '<i class="fas fa-bell"></i> SOS — Maintenir 3s';
+    },
+
+    triggerSosEmergencyAlert: async function() {
+        const user = this.state.currentUser || { firstname: 'Client', lastname: 'VIP', phone: '', email: '' };
+        const userName = `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'Client VIP';
+
+        this.showToast("🚨 Envoi de votre alerte SOS à l'administration VIP Connect...", "error");
+
+        let lat = null, lng = null;
+        if ('geolocation' in navigator) {
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } catch (e) {}
+        }
+
+        const alertObj = {
+            id: 'SOS-' + Date.now(),
+            userName,
+            userPhone: user.phone || '',
+            userEmail: user.email || '',
+            lat,
+            lng,
+            message: 'Alerte SOS déclenchée (bouton maintenu 3 secondes)',
+            status: 'active',
+            createdAt: new Date().toISOString()
+        };
+
+        this.state.sosAlerts.unshift(alertObj);
+        localStorage.setItem('vip_sos_alerts', JSON.stringify(this.state.sosAlerts));
+        if (window.vipSupabase && typeof window.vipSupabase.saveSosAlert === 'function') {
+            await window.vipSupabase.saveSosAlert(alertObj);
+        }
+
+        try {
+            await fetch('/api/notifications/send-sos-alert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-VIP-App-Token': 'VIP_CONNECT_SECURE_TOKEN_2026_x880'
+                },
+                body: JSON.stringify(alertObj)
+            });
+        } catch (e) {}
+
+        this.showModalAlert(
+            "🚨 Votre alerte SOS a bien été transmise à l'équipe VIP Connect" + (lat && lng ? " avec votre position GPS exacte." : ".") + "\n\nNotre conciergerie d'urgence (+237 656 70 13 77) a été notifiée.",
+            "Alerte SOS Envoyée",
+            "error"
+        );
+    },
+
+    updateAdminSosBadge: function() {
+        const badge = document.getElementById('admin-sos-badge');
+        if (!badge) return;
+        const activeCount = (this.state.sosAlerts || []).filter(a => a.status === 'active').length;
+        if (activeCount > 0) {
+            badge.innerText = activeCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    },
+
+    renderSosAlertsTable: function() {
+        const tbody = document.getElementById('table-sos-body');
+        if (!tbody) return;
+        const list = this.state.sosAlerts || [];
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Aucune alerte SOS reçue. Tout est calme ✓</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = list.map(a => {
+            const dt = a.created_at || a.createdAt;
+            const timeStr = dt ? new Date(dt).toLocaleString('fr-FR') : '-';
+            const lat = a.lat, lng = a.lng;
+            const posHtml = (lat && lng)
+                ? `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener noreferrer" style="color:#dc2626;font-weight:700;">📍 Voir sur Maps ↗</a>`
+                : 'Non fournie';
+            const isResolved = a.status === 'resolved';
+            return `
+                <tr style="${!isResolved ? 'background:rgba(239,68,68,0.08);' : ''}">
+                    <td>${timeStr}</td>
+                    <td><strong>${a.user_name || a.userName || 'Client'}</strong></td>
+                    <td><span style="font-family:monospace;">${a.user_phone || a.userPhone || '-'}</span></td>
+                    <td>${posHtml}</td>
+                    <td>${isResolved ? '<span class="badge badge-approved">Traitée ✓</span>' : '<span class="badge badge-rejected">🚨 URGENCE ACTIVE</span>'}</td>
+                    <td>
+                        ${!isResolved ? `<button type="button" class="btn-outline" style="width:auto;padding:5px 10px;font-size:11.5px;" onclick="app.resolveSosAlertItem('${a.id}')">Marquer traitée</button>` : '—'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    resolveSosAlertItem: async function(id) {
+        const item = (this.state.sosAlerts || []).find(a => a.id === id);
+        if (item) item.status = 'resolved';
+        localStorage.setItem('vip_sos_alerts', JSON.stringify(this.state.sosAlerts));
+        if (window.vipSupabase && typeof window.vipSupabase.resolveSosAlert === 'function') {
+            await window.vipSupabase.resolveSosAlert(id);
+        }
+        this.renderSosAlertsTable();
+        this.updateAdminSosBadge();
+        this.showToast("Alerte SOS marquée comme traitée.", "success");
     },
 
     // -------------------------------------------------------------

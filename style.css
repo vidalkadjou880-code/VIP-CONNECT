@@ -3540,6 +3540,75 @@ footer {
     }
 }
 
+/* ==========================================================================
+   BOUTON SOS D'URGENCE CLIENT (MAINTENIR 3 SECONDES)
+   ========================================================================== */
+.sos-panel {
+    margin-top: 16px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.sos-panel-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 220px;
+    font-size: 13px;
+    color: #7f1d1d;
+    line-height: 1.45;
+}
+
+.btn-sos-hold {
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #b91c1c;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 13px 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    min-width: 205px;
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+    transition: transform 0.15s ease;
+}
+
+.btn-sos-hold:active {
+    transform: scale(0.97);
+}
+
+.sos-progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: rgba(127, 29, 29, 0.65);
+    pointer-events: none;
+    transition: width 0.05s linear;
+}
+
+.sos-btn-label {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 
 
 

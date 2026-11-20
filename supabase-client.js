@@ -177,7 +177,10 @@ const vipSupabase = {
                         txId: r.tx_id,
                         amount: Number(r.amount) || 20000,
                         vehicleId: Number(r.vehicle_id) || 1,
-                        seatId: r.seat_id
+                        seatId: r.seat_id,
+                        boarded: !!r.boarded,
+                        boardedAt: r.boarded_at || null,
+                        driverName: r.driver_name || ''
                     }));
             }
             return [];
@@ -498,6 +501,8 @@ const vipSupabase = {
                 speed_kmh: Number(loc.speedKmh || loc.speed_kmh || 0),
                 heading: Number(loc.heading || 0),
                 status: loc.status || 'en_route',
+                driver_name: loc.driverName || loc.driver_name || '',
+                driver_phone: loc.driverPhone || loc.driver_phone || '',
                 updated_at: new Date().toISOString()
             };
             const { data, error } = await this.client
@@ -505,6 +510,231 @@ const vipSupabase = {
                 .upsert(payload, { onConflict: 'vehicle_id' });
             if (error) return { success: false, error: error.message };
             return { success: true, data };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    fetchAllVehicleLocations: async function () {
+        if (!this.client) return [];
+        try {
+            const { data, error } = await this.client.from('vip_vehicle_locations').select('*');
+            if (error) return [];
+            return data || [];
+        } catch (err) {
+            return [];
+        }
+    },
+
+    // -------------------------------------------------------------
+    // CHAUFFEURS (vip_drivers)
+    // -------------------------------------------------------------
+    fetchDrivers: async function () {
+        if (!this.client) return [];
+        try {
+            const { data, error } = await this.client.from('vip_drivers').select('*').order('created_at', { ascending: false });
+            if (error) return [];
+            return (data || []).map(d => ({
+                id: d.id,
+                firstname: d.firstname,
+                lastname: d.lastname,
+                email: d.email,
+                phone: d.phone,
+                vehicleName: d.vehicle_name || 'Changan VIP #1',
+                vehiclePlate: d.vehicle_plate || '',
+                password: d.password || '',
+                passwordSet: !!d.password_set,
+                inviteToken: d.invite_token || '',
+                status: d.status || 'actif'
+            }));
+        } catch (err) {
+            return [];
+        }
+    },
+
+    saveDriver: async function (driver) {
+        if (!this.client || !driver || !driver.id) return { success: false };
+        try {
+            const payload = {
+                id: driver.id,
+                firstname: driver.firstname || '',
+                lastname: driver.lastname || '',
+                email: String(driver.email || '').trim().toLowerCase(),
+                phone: String(driver.phone || '').trim(),
+                vehicle_name: driver.vehicleName || 'Changan VIP #1',
+                vehicle_plate: driver.vehiclePlate || '',
+                password: driver.password || '',
+                password_set: !!driver.passwordSet,
+                invite_token: driver.inviteToken || '',
+                status: driver.status || 'actif',
+                updated_at: new Date().toISOString()
+            };
+            const { error } = await this.client.from('vip_drivers').upsert(payload, { onConflict: 'id' });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    // -------------------------------------------------------------
+    // VOYAGES / HISTORIQUE CHAUFFEURS (vip_trips)
+    // -------------------------------------------------------------
+    fetchTrips: async function () {
+        if (!this.client) return [];
+        try {
+            const { data, error } = await this.client.from('vip_trips').select('*').order('started_at', { ascending: false });
+            if (error) return [];
+            return (data || []).map(t => ({
+                id: t.id,
+                date: t.date,
+                time: t.time,
+                route: t.route,
+                driverId: t.driver_id,
+                driverName: t.driver_name,
+                driverPhone: t.driver_phone,
+                vehicleId: Number(t.vehicle_id) || 1,
+                vehicleName: t.vehicle_name || 'Changan VIP #1',
+                status: t.status || 'en_cours',
+                startedAt: t.started_at,
+                endedAt: t.ended_at
+            }));
+        } catch (err) {
+            return [];
+        }
+    },
+
+    saveTrip: async function (trip) {
+        if (!this.client || !trip || !trip.id) return { success: false };
+        try {
+            const payload = {
+                id: trip.id,
+                date: trip.date,
+                time: trip.time,
+                route: trip.route,
+                driver_id: trip.driverId || '',
+                driver_name: trip.driverName || '',
+                driver_phone: trip.driverPhone || '',
+                vehicle_id: Number(trip.vehicleId) || 1,
+                vehicle_name: trip.vehicleName || 'Changan VIP #1',
+                status: trip.status || 'en_cours',
+                started_at: trip.startedAt || new Date().toISOString(),
+                ended_at: trip.endedAt || null
+            };
+            const { error } = await this.client.from('vip_trips').upsert(payload, { onConflict: 'id' });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    // -------------------------------------------------------------
+    // EMBARQUEMENT QR CODE & PARAMÈTRES CODE PIN (vip_settings)
+    // -------------------------------------------------------------
+    fetchReservationById: async function (resId) {
+        if (!this.client || !resId) return null;
+        try {
+            const { data, error } = await this.client.from('vip_reservations').select('*').eq('id', resId).maybeSingle();
+            if (error || !data) return null;
+            return {
+                id: data.id,
+                date: data.date,
+                time: data.time,
+                route: data.route,
+                phone: data.phone,
+                passengerName: data.passenger_name,
+                txId: data.tx_id,
+                amount: Number(data.amount) || 20000,
+                vehicleId: Number(data.vehicle_id) || 1,
+                seatId: data.seat_id,
+                boarded: !!data.boarded,
+                boardedAt: data.boarded_at || null
+            };
+        } catch (err) {
+            return null;
+        }
+    },
+
+    markReservationBoarded: async function (resId, boardedAtIso) {
+        if (!this.client || !resId) return { success: false };
+        try {
+            const { error } = await this.client
+                .from('vip_reservations')
+                .update({ boarded: true, boarded_at: boardedAtIso || new Date().toISOString() })
+                .eq('id', resId);
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    getSetting: async function (key) {
+        if (!this.client || !key) return null;
+        try {
+            const { data, error } = await this.client.from('vip_settings').select('value').eq('key', key).maybeSingle();
+            if (error || !data) return null;
+            return data.value;
+        } catch (err) {
+            return null;
+        }
+    },
+
+    setSetting: async function (key, value) {
+        if (!this.client || !key) return { success: false };
+        try {
+            const { error } = await this.client
+                .from('vip_settings')
+                .upsert({ key, value: String(value), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    // -------------------------------------------------------------
+    // ALERTES SOS CLIENTS (vip_sos_alerts)
+    // -------------------------------------------------------------
+    fetchSosAlerts: async function () {
+        if (!this.client) return [];
+        try {
+            const { data, error } = await this.client.from('vip_sos_alerts').select('*').order('created_at', { ascending: false }).limit(20);
+            if (error) return [];
+            return data || [];
+        } catch (err) {
+            return [];
+        }
+    },
+
+    saveSosAlert: async function (alertObj) {
+        if (!this.client || !alertObj) return { success: false };
+        try {
+            const { error } = await this.client.from('vip_sos_alerts').insert({
+                id: alertObj.id,
+                user_name: alertObj.userName || 'Passager VIP',
+                user_phone: alertObj.userPhone || '',
+                user_email: alertObj.userEmail || '',
+                lat: alertObj.lat || null,
+                lng: alertObj.lng || null,
+                message: alertObj.message || 'Alerte SOS maintenue 3 secondes',
+                status: alertObj.status || 'active',
+                created_at: alertObj.createdAt || new Date().toISOString()
+            });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    resolveSosAlert: async function (id) {
+        if (!this.client || !id) return { success: false };
+        try {
+            const { error } = await this.client.from('vip_sos_alerts').update({ status: 'resolved' }).eq('id', id);
+            if (error) return { success: false, error: error.message };
+            return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
         }
