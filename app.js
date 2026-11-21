@@ -38,9 +38,29 @@ const app = {
     // -------------------------------------------------------------
     init: async function() {
         this.initLanguage();
-        await this.loadTranslations();
         this.loadDatabase();
-        this.checkSession();
+
+        // 1. Si l'URL est un lien d'activation chauffeur (?driver_invite=...), afficher DIRECTEMENT la page mot de passe
+        //    sans jamais passer par l'accueil ni par une session Admin/Client existante
+        const initParams = new URLSearchParams(window.location.search);
+        const isDriverInviteFlow = !!(initParams.get('driver_invite') && initParams.get('email'));
+
+        if (isDriverInviteFlow) {
+            this.showSection('driver-setup');
+            document.documentElement.classList.remove('vip-preloading');
+            await this.loadTranslations();
+            this.translatePage();
+            this.initDialogKeyListeners();
+            this.initServiceWorkerAndNotifications();
+            await this.checkDriverInviteUrl();
+            return;
+        }
+
+        // 2. Restaurer immédiatement la bonne page avant même d'attendre Supabase (zéro flash accueil)
+        this.checkSession(true);
+        document.documentElement.classList.remove('vip-preloading');
+
+        await this.loadTranslations();
         this.setupDragAndDrop();
         this.setDefaultDateInput();
         this.translatePage();
@@ -48,12 +68,10 @@ const app = {
         this.initOtpInputs();
         this.listenForSupabaseAuth();
         await this.syncWithSupabase();
-        this.checkSession();
         this.initDialogKeyListeners();
         this.initServiceWorkerAndNotifications();
         this.startDepartureReminderEngine();
         this.initMaps();
-        this.checkDriverInviteUrl();
         
         // Rafraîchir les horaires dynamiques régulièrement
         setInterval(() => {
@@ -571,8 +589,8 @@ const app = {
                 localStorage.setItem('vip_users', JSON.stringify(this.state.users));
                 hasUpdates = true;
 
-                // Si un utilisateur est déjà connecté, rafraîchir son statut administrateur
-                if (this.state.currentUser) {
+                // Si un utilisateur est déjà connecté, rafraîchir son statut administrateur sans changer de page
+                if (this.state.currentUser && !this.state.currentDriver) {
                     const currClean = (this.state.currentUser.phone || '').replace(/[\s\-\(\)\+]/g, '').replace(/^237/, '');
                     const currEmail = (this.state.currentUser.email || '').toLowerCase();
                     const refreshed = this.state.users.find(u => {
@@ -584,9 +602,6 @@ const app = {
                         this.promoteIfAdmin(refreshed);
                         this.state.currentUser = refreshed;
                         this.updateHeaderMenu();
-                        if (this.isAdminUser(refreshed) && this.state.activeSection !== 'admin') {
-                            this.showSection('admin');
-                        }
                     }
                 }
             }
@@ -609,7 +624,10 @@ const app = {
                 hasUpdates = true;
             }
 
-            this.checkSession();
+            // Ne ré-exécuter checkSession que si aucune page protégée n'est déjà affichée
+            if (!this.state.currentUser && !this.state.currentDriver && this.state.activeSection !== 'driver-setup') {
+                this.checkSession(false);
+            }
 
             if (hasUpdates) {
                 if (this.state.activeSection === 'admin') {
@@ -618,6 +636,8 @@ const app = {
                     this.renderReviews();
                 } else if (this.state.activeSection === 'dashboard') {
                     this.updateDynamicSchedules();
+                } else if (this.state.activeSection === 'driver') {
+                    this.renderDriverPassengersList();
                 }
             }
 
@@ -635,7 +655,42 @@ const app = {
     // -------------------------------------------------------------
     // ROUTAGE & SESSIONS
     // -------------------------------------------------------------
-    checkSession: function() {
+    checkSession: function(restoreLastPage = false) {
+        // 1. Ne jamais écraser le flux d'activation mot de passe chauffeur
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('driver_invite')) {
+            return;
+        }
+
+        // 2. Vérifier d'abord une session Chauffeur active
+        const savedDriverRaw = localStorage.getItem('vip_current_driver');
+        if (savedDriverRaw) {
+            try {
+                const drv = JSON.parse(savedDriverRaw);
+                if (drv && drv.id) {
+                    const freshDrv = (this.state.drivers || []).find(d => d.id === drv.id) || drv;
+                    if (freshDrv.status === 'suspendu') {
+                        localStorage.removeItem('vip_current_driver');
+                    } else {
+                        this.state.currentDriver = freshDrv;
+                        this.state.currentUser = {
+                            firstname: freshDrv.firstname,
+                            lastname: freshDrv.lastname,
+                            email: freshDrv.email,
+                            phone: freshDrv.phone,
+                            isDriver: true,
+                            isAdmin: false,
+                            kyc: { status: 'approved' }
+                        };
+                        this.updateHeaderMenu();
+                        this.showSection('driver');
+                        return;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // 3. Vérifier une session Admin ou Client
         const session = localStorage.getItem('vip_current_session') || sessionStorage.getItem('vip_current_session');
         if (session && !localStorage.getItem('vip_current_session')) {
             localStorage.setItem('vip_current_session', session);
@@ -652,11 +707,20 @@ const app = {
                 this.promoteIfAdmin(user);
                 this.state.currentUser = user;
                 this.updateHeaderMenu();
-                
+
+                const lastSec = restoreLastPage ? localStorage.getItem('vip_last_section') : null;
                 if (this.isAdminUser(user)) {
-                    this.showSection('admin');
+                    const allowedAdminSecs = ['admin', 'dashboard', 'reviews'];
+                    const targetSec = (lastSec && allowedAdminSecs.includes(lastSec)) ? lastSec : 'admin';
+                    this.showSection(targetSec);
+                    if (targetSec === 'admin') {
+                        const lastTab = localStorage.getItem('vip_last_admin_tab') || 'reservations';
+                        this.showAdminTab(lastTab);
+                    }
                 } else {
-                    this.showSection('dashboard');
+                    const allowedClientSecs = ['dashboard', 'kyc-verification', 'reviews'];
+                    const targetSec = (lastSec && allowedClientSecs.includes(lastSec)) ? lastSec : 'dashboard';
+                    this.showSection(targetSec);
                 }
                 return;
             }
@@ -687,8 +751,11 @@ const app = {
             window.scrollTo(0, 0);
         }
 
-        // Enregistrer la section active
+        // Enregistrer la section active (et la mémoriser pour rester dessus après actualisation F5)
         this.state.activeSection = sectionId;
+        if (!['login', 'register', 'verify-otp', 'forgot-password', 'driver-setup'].includes(sectionId)) {
+            try { localStorage.setItem('vip_last_section', sectionId); } catch (e) {}
+        }
 
         // Réinitialiser les sélections temporaires
         this.state.selectedTime = null;
@@ -901,6 +968,8 @@ const app = {
                 localStorage.removeItem('vip_current_session');
                 sessionStorage.removeItem('vip_current_session');
                 localStorage.removeItem('vip_current_driver');
+                localStorage.removeItem('vip_last_section');
+                localStorage.removeItem('vip_last_admin_tab');
                 this.state.currentUser = null;
                 this.state.currentDriver = null;
                 this.stopDriverTripTrackingIfActive();
@@ -2766,6 +2835,7 @@ const app = {
 
     showAdminTab: async function(tabId, tabButton) {
         this.state.activeAdminTab = tabId;
+        try { localStorage.setItem('vip_last_admin_tab', tabId); } catch (e) {}
         
         // Mettre à jour l'état actif dans la barre latérale
         const items = document.querySelectorAll('.admin-nav-item');

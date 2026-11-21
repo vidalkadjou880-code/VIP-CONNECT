@@ -23,6 +23,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="VIP Connect">
     <link rel="apple-touch-icon" href="images/vip_connect_logo.png">
+    <!-- Anti-flash instantané au chargement (évite d'afficher l'accueil avant la vraie page) -->
+    <style>
+        html.vip-preloading main { visibility: hidden; }
+    </style>
+    <script>
+        (function() {
+            try {
+                var p = new URLSearchParams(window.location.search);
+                if (p.get('driver_invite') || localStorage.getItem('vip_current_session') || localStorage.getItem('vip_current_driver') || sessionStorage.getItem('vip_current_session')) {
+                    document.documentElement.classList.add('vip-preloading');
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 <body>
@@ -2124,7 +2138,7 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>');
         }
     </script>
-    <script src="app.js?v=20261120f"></script>
+    <script src="app.js?v=20261121"></script>
 </body>
 
 </html>
