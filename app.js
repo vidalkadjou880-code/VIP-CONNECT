@@ -653,12 +653,53 @@ const app = {
     },
 
     // -------------------------------------------------------------
-    // ROUTAGE & SESSIONS
+    // ROUTAGE, SESSIONS & EXPIRATION DE SÉCURITÉ (24 HEURES)
     // -------------------------------------------------------------
+    SESSION_TIMEOUT_MS: 24 * 60 * 60 * 1000, // 24 heures
+
+    touchSessionActivity: function() {
+        try {
+            localStorage.setItem('vip_last_activity', String(Date.now()));
+        } catch (e) {}
+    },
+
+    isSessionExpired24h: function() {
+        try {
+            const last = Number(localStorage.getItem('vip_last_activity') || '0');
+            if (!last) return false;
+            return (Date.now() - last) >= this.SESSION_TIMEOUT_MS;
+        } catch (e) {
+            return false;
+        }
+    },
+
     checkSession: function(restoreLastPage = false) {
         // 1. Ne jamais écraser le flux d'activation mot de passe chauffeur
         const params = new URLSearchParams(window.location.search);
         if (params.get('driver_invite')) {
+            return;
+        }
+
+        // Vérifier l'expiration de sécurité après 24h d'inactivité (Client, Chauffeur et Admin)
+        const hasAnySession = !!(localStorage.getItem('vip_current_driver') || localStorage.getItem('vip_current_session') || sessionStorage.getItem('vip_current_session'));
+        if (hasAnySession && this.isSessionExpired24h()) {
+            localStorage.removeItem('vip_current_session');
+            sessionStorage.removeItem('vip_current_session');
+            localStorage.removeItem('vip_current_driver');
+            localStorage.removeItem('vip_last_section');
+            localStorage.removeItem('vip_last_admin_tab');
+            localStorage.removeItem('vip_last_activity');
+            this.state.currentUser = null;
+            this.state.currentDriver = null;
+            this.updateHeaderMenu();
+            this.showSection('login');
+            setTimeout(() => {
+                this.showModalAlert(
+                    "Par mesure de sécurité, votre session a expiré après 24 heures d'inactivité.\n\nVeuillez vous reconnecter : un code de vérification par email vous sera demandé.",
+                    "Session Expirée (24h)",
+                    "warning"
+                );
+            }, 250);
             return;
         }
 
@@ -672,6 +713,7 @@ const app = {
                     if (freshDrv.status === 'suspendu') {
                         localStorage.removeItem('vip_current_driver');
                     } else {
+                        this.touchSessionActivity();
                         this.state.currentDriver = freshDrv;
                         this.state.currentUser = {
                             firstname: freshDrv.firstname,
@@ -704,6 +746,7 @@ const app = {
                 return uPhone === cleanSession || u.phone === session || uEmail === sessionLower;
             });
             if (user) {
+                this.touchSessionActivity();
                 this.promoteIfAdmin(user);
                 this.state.currentUser = user;
                 this.updateHeaderMenu();
@@ -1171,22 +1214,12 @@ const app = {
                 this.showModalAlert("Votre accès Chauffeur a été suspendu par l'administration VIP Connect. Contactez votre responsable.", "Accès Suspendu", "error");
                 return;
             }
-            this.state.currentDriver = driver;
-            this.state.currentUser = {
-                firstname: driver.firstname,
-                lastname: driver.lastname,
+            // Vérification OTP par email obligatoire pour les chauffeurs lors de la connexion
+            this.initiate2FA({
+                user: driver,
                 email: driver.email,
-                phone: driver.phone,
-                isDriver: true,
-                isAdmin: false,
-                kyc: { status: 'approved' }
-            };
-            localStorage.setItem('vip_current_driver', JSON.stringify(driver));
-            this.updateHeaderMenu();
-            this.showModalAlert(`Bienvenue ${driver.firstname} dans votre Espace Chauffeur VIP Connect.`, "Connexion Chauffeur", "success");
-            this.showSection('driver');
-            const formLogin = document.getElementById('form-login');
-            if (formLogin) formLogin.reset();
+                type: 'driver_login'
+            });
             return;
         }
 
@@ -1222,20 +1255,7 @@ const app = {
         
         if (user) {
             this.promoteIfAdmin(user);
-            // Administrateur connecté directement vers la console
-            if (this.isAdminUser(user)) {
-                this.saveUsers();
-                localStorage.setItem('vip_current_session', user.phone);
-                sessionStorage.setItem('vip_current_session', user.phone);
-                this.state.currentUser = user;
-                this.updateHeaderMenu();
-                this.showModalAlert(`Bienvenue ${user.firstname} dans la console d'administration VIP Connect.`, "Accès Administrateur", "success");
-                this.showSection('admin');
-                const formLogin = document.getElementById('form-login');
-                if (formLogin) formLogin.reset();
-                return;
-            }
-
+            // Vérification OTP par email obligatoire pour TOUS (Administrateur, Chauffeur et Client)
             const targetEmail = user.email || (identifier.includes('@') ? identifier : `${user.phone}@vip.cm`);
             this.initiate2FA({
                 user: user,
@@ -1481,7 +1501,27 @@ const app = {
 
         if (this.state.otpTimerInterval) clearInterval(this.state.otpTimerInterval);
 
-        if (type === 'login') {
+        if (type === 'driver_login') {
+            this.touchSessionActivity();
+            this.state.currentDriver = user;
+            this.state.currentUser = {
+                firstname: user.firstname,
+                lastname: user.lastname,
+                email: user.email,
+                phone: user.phone,
+                isDriver: true,
+                isAdmin: false,
+                kyc: { status: 'approved' }
+            };
+            localStorage.setItem('vip_current_driver', JSON.stringify(user));
+            this.updateHeaderMenu();
+            this.state.pending2FA = null;
+            this.showModalAlert(`Bienvenue ${user.firstname} dans votre Espace Chauffeur VIP Connect.`, "Connexion Chauffeur Réussie", "success");
+            this.showSection('driver');
+            const formLogin = document.getElementById('form-login');
+            if (formLogin) formLogin.reset();
+        } else if (type === 'login') {
+            this.touchSessionActivity();
             this.promoteIfAdmin(user);
             localStorage.setItem('vip_current_session', user.phone);
             sessionStorage.setItem('vip_current_session', user.phone);
@@ -1503,6 +1543,7 @@ const app = {
             const formLogin = document.getElementById('form-login');
             if (formLogin) formLogin.reset();
         } else if (type === 'register') {
+            this.touchSessionActivity();
             this.promoteIfAdmin(user);
             const existingIndex = this.state.users.findIndex(u => u.phone === user.phone || u.email === user.email);
             if (existingIndex >= 0) {
@@ -4663,6 +4704,7 @@ const app = {
             kyc: { status: 'approved' }
         };
         localStorage.setItem('vip_current_driver', JSON.stringify(driver));
+        this.touchSessionActivity();
         this._pendingDriverSetup = null;
 
         this.showModalAlert(`Mot de passe créé avec succès ! Bienvenue dans votre Espace Chauffeur, ${driver.firstname}.`, "Compte Chauffeur Activé", "success");
